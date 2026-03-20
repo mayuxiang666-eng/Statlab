@@ -315,10 +315,10 @@
   --text-secondary: #424245;
   --text-muted: #86868b;
 
-  --accent: #0071e3;
-  --accent-hover: #0077ed;
-  --accent-dim: rgba(0, 113, 227, 0.06);
-  --accent-glow: rgba(0, 113, 227, 0.12);
+  --accent: #ff9a00;
+  --accent-hover: #ffb700;
+  --accent-dim: rgba(255, 154, 0, 0.08);
+  --accent-glow: rgba(255, 154, 0, 0.15);
 
   --success: #34c759;
   --success-dim: rgba(52, 199, 89, 0.08);

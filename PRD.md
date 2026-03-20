@@ -53,7 +53,7 @@
 ## 4.1 模块1：工业Python实验室
 ### 4.1.1 双栏布局
 - 左栏：只读参考代码（语法高亮、行号、折叠、工业业务注释）
-- 右栏：Web Coding填空编辑器（`______` 占位）
+- 右栏：Web Coding填空编辑器 
 - 支持库：Pandas、NumPy、Scikit-learn、Matplotlib、Joblib
 - 自动保存：每3秒保存，刷新不丢失
 

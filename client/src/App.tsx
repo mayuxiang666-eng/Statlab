@@ -23,11 +23,15 @@ import {
 import ChartBuilder from "./ChartBuilder";
 import DataProcessBuilder from "./DataProcessBuilder";
 import AiAssistant from "./AiAssistant";
-import MLWorkspace from "./MLWorkspace";
+import LabPortal from "./LabPortal";
+import PracticalLabs from "./PracticalLabs";
+import Competitions from "./Competitions";
+import DeploymentTraining from "./DeploymentTraining";
 import HelpPage from "./HelpPage";
 import PythonLab from "./PythonLab";
-import LabPortal from "./LabPortal";
+import MLWorkspace from "./MLWorkspace";
 import { Language, t } from "./locales";
+import { useAuth } from "./context/AuthContext";
 
 
 class ErrorBoundary extends React.Component<
@@ -65,7 +69,7 @@ class ErrorBoundary extends React.Component<
 }
 
 // ─── Types ───────────────────────────────────────────────────────────────────
-type Page = "home" | "data" | "process" | "academic" | "ml" | "report" | "help" | "result" | "db-connect" | "builder" | "python-lab" | "lab-notebooks" | "lab-assignments" | "lab-achievements";
+type Page = "home" | "data" | "process" | "academic" | "ml" | "report" | "help" | "result" | "db-connect" | "builder" | "python-lab" | "lab-notebooks" | "lab-assignments" | "lab-achievements" | "practical" | "competitions" | "deployment";
 
 type ResTab = "output" | "charts" | "interpret" | "logs";
 type LogEntry = { ts: string; level: "info" | "success" | "warn" | "error"; msg: string };
@@ -154,8 +158,8 @@ export default function App() {
     y: typeof window !== "undefined" ? window.innerHeight - 190 : 520
   }));
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
-  const [user, setUser] = useState<UserIdentity | null>(null);
-  const [userReady, setUserReady] = useState(false);
+  const { user, logout: authLogout } = useAuth(); // NEW: use real auth
+  const userReady = !!user;
   const [analysisName, setAnalysisName] = useState("");
   const [analystName, setAnalystName] = useState("");
   const [lang, setLang] = useState<Language>(() => (localStorage.getItem("statlab_lang") as Language) || "zh");
@@ -200,53 +204,55 @@ export default function App() {
     setLogs((p) => [...p.slice(-99), { ts: nowStr(), level, msg }]);
   }, []);
 
-  useEffect(() => {
-    const initIdentity = async () => {
-      const cachedKey = localStorage.getItem("statlab-user-key");
-      if (cachedKey) {
-        setUser({ key: cachedKey, ip: localStorage.getItem("statlab-user-ip") || undefined });
-        setUserReady(true);
-        return;
-      }
-      try {
-        const { data } = await axios.get<{ ip: string }>("https://api.ipify.org?format=json", { timeout: 4000 });
-        const key = `user-${data.ip}`;
-        localStorage.setItem("statlab-user-key", key);
-        localStorage.setItem("statlab-user-ip", data.ip);
-        setUser({ key, ip: data.ip });
-      } catch {
-        const key = `user-${crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36)}`;
-        localStorage.setItem("statlab-user-key", key);
-        setUser({ key });
-      } finally {
-        setUserReady(true);
-      }
-    };
-    initIdentity();
-  }, []);
+  const importSample = useCallback(async (name?: string) => {
+    const api = name ? `/api/datasets/import-sample/${name}` : "/api/datasets/import-sample";
+    addLog("info", `导入${name ? "经典" : "示例"}数据...`);
+    try {
+      const { data } = await axios.post<DatasetInfo>(api);
+      await refreshDatasets(); setActiveVersion(data.versions[0] as DatasetVersionMeta); setActiveDatasetId(data.id);
+      setPage("data");
+      addLog("success", "数据集已导入");
+    } catch { addLog("error", "导入失败"); }
+  }, [addLog]);
 
-  useEffect(() => {
-    if (!userReady || !user?.key) return;
-    axios.get<AlgorithmSpec[]>("/api/algorithms").then((r) => setAlgorithms(r.data))
-      .catch(() => addLog("error", "无法获取算法列表"));
-    refreshDatasets();
-    refreshRunHistory();
-    setPreviewScrollLeft(0);
-
-    const cachedResult = localStorage.getItem(`statlab-last-result:${user.key}`);
-    if (cachedResult) {
-      try { setResult(JSON.parse(cachedResult)); } catch { /* ignore */ }
+  const importAllSamples = useCallback(async () => {
+    if (autoImportingRef.current) return;
+    autoImportingRef.current = true;
+    addLog("info", "正在导入内置示例数据集...");
+    try {
+      await importSample();
+      await importSample("advertising");
+      await importSample("housing");
+      await importSample("employee");
+      addLog("success", "示例数据集已全部就绪");
+    } catch (err: any) {
+      addLog("error", err?.response?.data?.error || "示例导入失败");
+    } finally {
+      autoImportingRef.current = false;
+      await refreshDatasets();
     }
-  }, [userReady, user?.key]);
+  }, [importSample, addLog]);
 
-  useEffect(() => {
-    const onResize = () => setGuideFabPos(p => clampPos(p.x, p.y));
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
+  const refreshDatasets = useCallback(async () => {
+    try {
+      const { data } = await axios.get<DatasetInfo[]>("/api/datasets");
+      setDatasets((prev) => {
+        const dbOnes = prev.filter((d: any) => typeof d.id === "string");
+        return [...data, ...dbOnes];
+      });
+      if (!activeVersion && data[0]?.versions?.[0]) {
+        setActiveDatasetId(data[0].id); setActiveVersion(data[0].versions[0] as DatasetVersionMeta);
+      }
+      if (data.length === 0 && !autoImportingRef.current) {
+        await importAllSamples();
+      }
+    } catch (err) {
+      console.error("Failed to fetch datasets", err);
+    }
+  }, [activeVersion, addLog, importAllSamples]);
 
   const refreshRunHistory = useCallback(async () => {
-    if (!user?.key) return;
+    if (!user?.id) return;
     try {
       const { data: algos } = await axios.get<AlgorithmSpec[]>("/api/algorithms");
       const { data: history } = await axios.get<RunHistoryItem[]>("/api/run-history");
@@ -261,29 +267,49 @@ export default function App() {
       });
       setRunHistory(mapped);
     } catch (err) {
-      const raw = localStorage.getItem(`statlab-run-history:${user.key}`);
+      const raw = localStorage.getItem(`statlab-run-history:${user.id}`);
       if (raw) {
         try { setRunHistory(JSON.parse(raw)); return; } catch { /* ignore */ }
       }
       console.error("Failed to fetch history", err);
     }
-  }, [user?.key]);
+  }, [user?.id]);
 
   useEffect(() => {
-    if (!user?.key) return;
+    if (!user?.id) return;
+    axios.get<AlgorithmSpec[]>("/api/algorithms").then((r) => setAlgorithms(r.data))
+      .catch(() => addLog("error", "无法获取算法列表"));
+    refreshDatasets();
+    refreshRunHistory();
+    setPreviewScrollLeft(0);
+
+    const cachedResult = localStorage.getItem(`statlab-last-result:${user.id}`);
+    if (cachedResult) {
+      try { setResult(JSON.parse(cachedResult)); } catch { /* ignore */ }
+    }
+  }, [user?.id, refreshDatasets, refreshRunHistory, addLog]);
+
+  useEffect(() => {
+    const onResize = () => setGuideFabPos(p => clampPos(p.x, p.y));
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  useEffect(() => {
+    if (!user?.id) return;
     try {
       const lite = runHistory.slice(-100).map(r => ({ ...r, result: undefined }));
-      localStorage.setItem(`statlab-run-history:${user.key}`, JSON.stringify(lite));
+      localStorage.setItem(`statlab-run-history:${user.id}`, JSON.stringify(lite));
     } catch { }
-  }, [runHistory, user?.key]);
+  }, [runHistory, user?.id]);
 
   useEffect(() => {
-    if (!user?.key || !result) return;
+    if (!user?.id || !result) return;
     try {
       const lite = { ...result, extras: undefined };
-      localStorage.setItem(`statlab-last-result:${user.key}`, JSON.stringify(lite));
+      localStorage.setItem(`statlab-last-result:${user.id}`, JSON.stringify(lite));
     } catch { }
-  }, [result, user?.key]);
+  }, [result, user?.id]);
 
   // Restore DB datasets from localStorage after refresh
   useEffect(() => {
@@ -445,50 +471,6 @@ export default function App() {
     } finally { setRunning(false); }
   };
 
-  const importSample = async (name?: string) => {
-    const api = name ? `/api/datasets/import-sample/${name}` : "/api/datasets/import-sample";
-    addLog("info", `导入${name ? "经典" : "示例"}数据...`);
-    try {
-      const { data } = await axios.post<DatasetInfo>(api);
-      await refreshDatasets(); setActiveVersion(data.versions[0]); setActiveDatasetId(data.id);
-      setPage("data"); // Switch to data page to show new dataset
-      addLog("success", "数据集已导入");
-    } catch { addLog("error", "导入失败"); }
-  };
-
-  const importAllSamples = async () => {
-    if (autoImportingRef.current) return;
-    autoImportingRef.current = true;
-    addLog("info", "正在导入内置示例数据集...");
-    try {
-      // 顺序导入，避免并发冲突
-      await importSample();
-      await importSample("advertising");
-      await importSample("housing");
-      await importSample("employee");
-      addLog("success", "示例数据集已全部就绪");
-    } catch (err: any) {
-      addLog("error", err?.response?.data?.error || "示例导入失败");
-    } finally {
-      autoImportingRef.current = false;
-      await refreshDatasets();
-    }
-  };
-
-  const refreshDatasets = async () => {
-    const { data } = await axios.get<DatasetInfo[]>("/api/datasets");
-    setDatasets((prev) => {
-      const dbOnes = prev.filter((d: any) => typeof d.id === "string");
-      return [...data, ...dbOnes];
-    });
-    if (!activeVersion && data[0]?.versions?.[0]) {
-      setActiveDatasetId(data[0].id); setActiveVersion(data[0].versions[0] as VersionLike);
-    }
-    // 若无任何数据集，自动导入示例，保证新用户即用
-    if (data.length === 0 && !autoImportingRef.current) {
-      await importAllSamples();
-    }
-  };
 
   const uploadDataset = async (file: File) => {
     const form = new FormData(); form.append("file", file);
@@ -650,21 +632,25 @@ export default function App() {
     (s) => (assignments[s.id] || []).length >= s.min
   );
 
-  const navItems: { id: Page; icon: string; label: string }[] = [
+  const analysisNavItems: { id: Page; icon: string; label: string }[] = [
     { id: "home", icon: "🏠", label: t(lang, "nav", "home") },
     { id: "data", icon: "🗂️", label: t(lang, "nav", "data") },
     { id: "process", icon: "🛠️", label: t(lang, "nav", "proc") },
     { id: "academic", icon: "📐", label: t(lang, "nav", "academic") },
     { id: "ml", icon: "🤖", label: t(lang, "nav", "ml") },
-    { id: "python-lab", icon: "🐍", label: lang === 'zh' ? "Python 实验室" : "Python Lab" },
-    { id: "lab-notebooks", icon: "📓", label: lang === 'zh' ? "我的实验室" : "My Lab" },
-    { id: "lab-assignments", icon: "📝", label: lang === 'zh' ? "作业 & 反馈" : "Assignments" },
-    { id: "lab-achievements", icon: "🏆", label: lang === 'zh' ? "我的成果" : "Achievements" },
     { id: "builder", icon: "🧩", label: t(lang, "nav", "builder") },
-
     { id: "report", icon: "📊", label: t(lang, "nav", "report") },
-    { id: "help", icon: "❓", label: t(lang, "nav", "help") },
   ];
+
+  const practiceNavItems: { id: Page; icon: string; label: string }[] = [
+    { id: "python-lab", icon: "📖", label: lang === 'zh' ? "参与学习" : "Learn" },
+    { id: "practical", icon: "🧪", label: lang === 'zh' ? "实操实验室" : "Practical" },
+    { id: "lab-assignments", icon: "📝", label: lang === 'zh' ? "作业 & 反馈" : "Assignments" },
+    { id: "competitions", icon: "🏁", label: lang === 'zh' ? "算法竞赛" : "Competitions" },
+    { id: "deployment", icon: "🚀", label: lang === 'zh' ? "部署实训" : "Deployment" },
+    { id: "lab-achievements", icon: "🏆", label: lang === 'zh' ? "我的成果" : "Achievements" },
+  ];
+
 
   const getAntdLocale = () => {
     if (lang === 'en') return enUS;
@@ -690,14 +676,24 @@ export default function App() {
             </div>
           </div>
           <nav className="sidebar-nav">
-            <div className="sidebar-section-title">{lang === 'zh' ? '导航' : lang === 'de' ? 'Navigation' : 'Navigation'}</div>
-            {navItems.map((item) => (
+            <div className="sidebar-section-title">{lang === "zh" ? "分析与中心" : "Algorithm Analysis Center"}</div>
+            {analysisNavItems.map((item) => (
               <div key={item.id} className={`sidebar-item ${page === item.id ? "active" : ""}`} onClick={() => setPage(item.id)}>
                 <span className="nav-icon" style={{ fontSize: 16 }}>{item.icon}</span>
                 <span>{item.label}</span>
                 {(item.id === "academic" || item.id === "ml") && (
                   <span className="nav-badge">{algorithms.filter((a) => a.category === (item.id === "academic" ? "academic" : "ml")).length}</span>
                 )}
+                {page === item.id && <div className="active-indicator" />}
+              </div>
+            ))}
+
+            <div className="sidebar-section-title" style={{ marginTop: 12 }}>{lang === "zh" ? "实训训练营" : "Training Camp"}</div>
+            {practiceNavItems.map((item) => (
+              <div key={item.id} className={`sidebar-item ${page === item.id ? "active" : ""}`} onClick={() => setPage(item.id)}>
+                <span className="nav-icon" style={{ fontSize: 16 }}>{item.icon}</span>
+                <span>{item.label}</span>
+                {page === item.id && <div className="active-indicator" />}
               </div>
             ))}
             {datasets.length > 0 && <>
@@ -721,7 +717,31 @@ export default function App() {
               </div>
             </>}
           </nav>
-          <div className="sidebar-footer" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div className="sidebar-footer" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 8px' }}>
+              <div style={{ width: 32, height: 32, borderRadius: 16, background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600, fontSize: 13 }}>
+                {user?.name?.[0] || user?.username?.[0] || 'U'}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }} className="truncate">
+                  {user?.name || user?.username}
+                </div>
+                <div style={{ fontSize: 10, color: 'var(--text-muted)' }} className="truncate">
+                  {user?.username}
+                </div>
+              </div>
+              <button 
+                className="btn-icon-only" 
+                title={lang === "zh" ? "退出登录" : "Logout"} 
+                onClick={authLogout}
+                style={{ opacity: 0.6, padding: 4 }}
+              >
+                <Trash2 size={16} />
+              </button>
+            </div>
+
+            <div style={{ height: 1, background: 'var(--border)', margin: '0 8px' }} />
+
             <div style={{ display: 'flex', justifyContent: 'center', gap: 6 }}>
               <button style={{ background: lang === 'zh' ? 'var(--accent)' : 'transparent', color: lang === 'zh' ? '#fff' : 'inherit', border: '1px solid var(--border)', borderRadius: 4, padding: '2px 6px', fontSize: 10, cursor: 'pointer' }} onClick={() => (window as any).__setLang('zh')}>ZH</button>
               <button style={{ background: lang === 'en' ? 'var(--accent)' : 'transparent', color: lang === 'en' ? '#fff' : 'inherit', border: '1px solid var(--border)', borderRadius: 4, padding: '2px 6px', fontSize: 10, cursor: 'pointer' }} onClick={() => (window as any).__setLang('en')}>EN</button>
@@ -739,6 +759,26 @@ export default function App() {
 
         {/* ── Main ── */}
         <div className="main">
+          {/* Global Top-Right Header */}
+          <header style={{ 
+            height: 56, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', 
+            padding: '0 24px', background: 'var(--bg-surface)', borderBottom: '1px solid var(--border)',
+            flexShrink: 0, zIndex: 100 
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>{user?.name || user?.username}</span>
+                <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>{user?.username}</span>
+              </div>
+              <div style={{ 
+                width: 32, height: 32, borderRadius: 16, background: 'var(--accent)', color: '#fff', 
+                display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 12
+              }}>
+                {user?.name?.[0] || user?.username?.[0] || 'U'}
+              </div>
+            </div>
+          </header>
+
           {page === "builder" ? (
             <ChartBuilder
               datasets={datasets as any}
@@ -821,14 +861,14 @@ export default function App() {
 
                     <div style={{ marginTop: 40, display: "grid", gridTemplateColumns: "2fr 1fr", gap: 30 }}>
                       <div>
-                        <div className="section-head" style={{ marginBottom: 16, fontSize: 16 }}>🚀 快速开始</div>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 16 }}>
+                        <div className="section-head" style={{ marginBottom: 16, fontSize: 16 }}>📊 算法分析模块 (Analysis)</div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
                           <div className="card quick-action-v2" style={{ padding: 20, borderRadius: 16, cursor: "pointer", transition: "all 0.2s" }} onClick={() => setShowUploadModal(true)}>
                             <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
                               <div style={{ background: "var(--accent-dim)", color: "var(--accent)", width: 40, height: 40, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>📤</div>
                               <div>
-                                <div style={{ fontWeight: 700, fontSize: 14 }}>上传数据</div>
-                                <div style={{ fontSize: 11, color: "var(--text-muted)" }}>CSV/Excel</div>
+                                <div style={{ fontWeight: 700, fontSize: 14 }}>数据上传</div>
+                                <div style={{ fontSize: 11, color: "var(--text-muted)" }}>本地 CSV/Excel</div>
                               </div>
                             </div>
                           </div>
@@ -836,40 +876,53 @@ export default function App() {
                             <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
                               <div style={{ background: "var(--purple-dim)", color: "var(--purple)", width: 40, height: 40, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>🔐</div>
                               <div>
-                                <div style={{ fontWeight: 700, fontSize: 14 }}>数据库连接</div>
-                                <div style={{ fontSize: 11, color: "var(--text-muted)" }}>MES/PLC直连</div>
+                                <div style={{ fontWeight: 700, fontSize: 14 }}>产线连接</div>
+                                <div style={{ fontSize: 11, color: "var(--text-muted)" }}>MES/PLC 实时数据</div>
                               </div>
                             </div>
                           </div>
-                          <div className="card quick-action-v2" style={{ padding: 20, borderRadius: 16, cursor: "pointer", transition: "all 0.2s" }} onClick={() => setPage("python-lab")}>
-                            <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                              <div style={{ background: "rgba(167, 139, 250, 0.15)", color: "#a78bfa", width: 40, height: 40, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>🐍</div>
-                              <div>
-                                <div style={{ fontWeight: 700, fontSize: 14 }}>Python 实验室</div>
-                                <div style={{ fontSize: 11, color: "var(--text-muted)" }}>自由编程练习</div>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="card quick-action-v2" style={{ padding: 20, borderRadius: 16, cursor: "pointer", transition: "all 0.2s" }} onClick={() => setShowSamplePicker(true)}>
-                            <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                              <div style={{ background: "var(--success-dim)", color: "var(--success)", width: 40, height: 40, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>🧪</div>
-                              <div>
-                                <div style={{ fontWeight: 700, fontSize: 14 }}>尝试示例</div>
-                                <div style={{ fontSize: 11, color: "var(--text-muted)" }}>内置练习</div>
-                              </div>
-                            </div>
-                          </div>
-
                           <div className="card quick-action-v2" style={{ padding: 20, borderRadius: 16, cursor: "pointer", transition: "all 0.2s" }} onClick={() => setPage("process")}>
                             <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
                               <div style={{ background: "var(--bg-raised)", color: "var(--text-primary)", width: 40, height: 40, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>🛠️</div>
                               <div>
-                                <div style={{ fontWeight: 700, fontSize: 14 }}>数据处理</div>
-                                <div style={{ fontSize: 11, color: "var(--text-muted)" }}>缺失/异常/编码</div>
+                                <div style={{ fontWeight: 700, fontSize: 14 }}>数据加工</div>
+                                <div style={{ fontSize: 11, color: "var(--text-muted)" }}>清洗与版本控制</div>
                               </div>
                             </div>
                           </div>
                         </div>
+
+                        <div className="section-head" style={{ marginTop: 32, marginBottom: 16, fontSize: 16 }}>🎓 实战与技能 (Training)</div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
+                          <div className="card quick-action-v2" style={{ padding: 20, borderRadius: 16, cursor: "pointer", transition: "all 0.2s" }} onClick={() => setPage("python-lab")}>
+                            <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                              <div style={{ background: "rgba(167, 139, 250, 0.15)", color: "#a78bfa", width: 40, height: 40, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>📖</div>
+                              <div>
+                                <div style={{ fontWeight: 700, fontSize: 14 }}>基础学习</div>
+                                <div style={{ fontSize: 11, color: "var(--text-muted)" }}>Python/ML 教程</div>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="card quick-action-v2" style={{ padding: 20, borderRadius: 16, cursor: "pointer", transition: "all 0.2s" }} onClick={() => setPage("practical")}>
+                            <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                              <div style={{ background: "var(--success-dim)", color: "var(--success)", width: 40, height: 40, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>🧪</div>
+                              <div>
+                                <div style={{ fontWeight: 700, fontSize: 14 }}>实操演练</div>
+                                <div style={{ fontSize: 11, color: "var(--text-muted)" }}>工业真实场景模拟</div>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="card quick-action-v2" style={{ padding: 20, borderRadius: 16, cursor: "pointer", transition: "all 0.2s" }} onClick={() => setPage("deployment")}>
+                            <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                              <div style={{ background: "#fef3c7", color: "#d97706", width: 40, height: 40, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>🚀</div>
+                              <div>
+                                <div style={{ fontWeight: 700, fontSize: 14 }}>模型部署</div>
+                                <div style={{ fontSize: 11, color: "var(--text-muted)" }}>API 服务实训</div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
 
                         <div className="section-head" style={{ marginTop: 40, marginBottom: 16, fontSize: 16 }}>💡 操作指南</div>
                         <div className="card" style={{ padding: 0, overflow: "hidden", borderRadius: 16 }}>
@@ -938,11 +991,12 @@ export default function App() {
                 </div>
               )}
 
-              {/* Topbar */}
               {page !== "home" && (
                 <div className="topbar">
                   <div style={{ minWidth: 0, flex: 1 }}>
-                    <div className="topbar-title">{navItems.find((n) => n.id === page)?.icon} {navItems.find((n) => n.id === page)?.label}</div>
+                    <div className="topbar-title">
+                      {([...analysisNavItems, ...practiceNavItems]).find((n) => n.id === page)?.icon} {([...analysisNavItems, ...practiceNavItems]).find((n) => n.id === page)?.label}
+                    </div>
                     {activeVersion && <div className="topbar-subtitle truncate" title={activeDataset?.name}>{activeDataset?.name} · {activeVersion.columns.length} 字段</div>}
                   </div>
                   <div className="topbar-actions" style={{ flexShrink: 0 }}>
@@ -1223,6 +1277,19 @@ export default function App() {
                 />
               )}
 
+              {page === "practical" && (
+                <PracticalLabs />
+              )}
+
+              {page === "competitions" && (
+                <Competitions />
+              )}
+
+              {page === "deployment" && (
+                <DeploymentTraining />
+              )}
+
+
 
               {/* ── 学术统计 ── */}
               {page === "academic" && (
@@ -1406,8 +1473,8 @@ export default function App() {
               {page === "help" && <HelpPage />}
             </>
           )}
-        </div>
-        <AiAssistant />
+          
+          <AiAssistant />
 
         {/* ── Newbie Guide (always available) ── */}
         <button
@@ -1440,6 +1507,7 @@ export default function App() {
             hasModel={runHistory.some((r) => (r.result as any)?.extras?.modelPackage)}
           />
         )}
+        </div>
 
         {/* ── Upload Modal ── */}
         {showUploadModal && (
@@ -2389,6 +2457,9 @@ function AnalysisResultPage({ result, resTab, setResTab, logs, setLogs, onBack, 
       </div>
       <div className="result-body animate-fade" style={{ flex: 1, overflowY: "auto", padding: 20 }}>
         <div style={{ maxWidth: 1000, margin: "0 auto" }}>
+          {resTab === "output" && algoName.includes("工业多参数影响分析") && result && (
+            <IndustrialAnalysisSummary result={result} />
+          )}
           {resTab === "output" && (
             result ? result.tables.map((tbl, i) => (
               <div key={i} style={{ marginBottom: 32 }} className="animate-fade">
@@ -2444,6 +2515,119 @@ function AnalysisResultPage({ result, resTab, setResTab, logs, setLogs, onBack, 
             </>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── IndustrialAnalysisSummary: 算法简介与核心结论 ────────────────────────────
+function IndustrialAnalysisSummary({ result }: { result: AnalysisResult }) {
+  // Relaxed matching for tables
+  const ruleTable = result.tables.find(t => 
+    /规则|Rule|工况|诊断/.test(t.title) && !/数据质量/.test(t.title)
+  );
+  
+  let topRule = "";
+  let worstRule = "";
+  if (ruleTable) {
+    // Search ALL cells for Best/Worst keywords in each row
+    const bestRow = ruleTable.rows.find(r => r.some(cell => /最优|推荐|建议|最佳|Best|Positive/i.test(String(cell))));
+    const worstRow = ruleTable.rows.find(r => r.some(cell => /最差|回避|预警|高危|Worst|Negative/i.test(String(cell))));
+    
+    // Function to find the most descriptive rule string in a row
+    const getBestRuleText = (row: any[]) => {
+      // Prioritize strings containing mathematical comparisons or more than 10 chars
+      const candidates = row.filter(c => typeof c === 'string' && (c.includes('>') || c.includes('<') || c.length > 10));
+      return candidates.length > 0 ? candidates[0] : row.reduce((a, b) => String(a).length > String(b).length ? a : b, "");
+    };
+
+    if (bestRow) topRule = getBestRuleText(bestRow);
+    if (worstRow) worstRule = getBestRuleText(worstRow);
+    
+    // Fallback: if no explicit best/worst label found via keywords, take the first row's longest text if it's long
+    if (!topRule && ruleTable.rows.length > 0) {
+       const longestInFirst = ruleTable.rows[0].reduce((a, b) => String(a).length > String(b).length ? a : b, "");
+       if (String(longestInFirst).length > 10) topRule = String(longestInFirst);
+    }
+  }
+
+  const importanceTable = result.tables.find(t => 
+    /特征|SHAP|重要|关键|Importance|Factor/i.test(t.title) 
+    && !/数据质量/.test(t.title)
+  );
+  
+  // Find feature names more intelligently (often in column 0 or 1 if col 0 is rank)
+  const topFeatures = importanceTable?.rows.slice(0, 3).map(r => {
+    const val0 = String(r[0]);
+    const val1 = String(r[1] || "");
+    const val2 = String(r[2] || "");
+    // Pattern: if first column is just a rank like "1", "01" (small integer)
+    if (/^\d+(\.\d+)?$/.test(val0) && val0.length <= 2 && val1 && !/^\d+(\.\d+)?$/.test(val1)) return val1;
+    // Pattern: if col 1 is also a number (maybe importance score?), check col 0
+    return val0;
+  }) || [];
+
+  return (
+    <div style={{ marginBottom: 32, padding: '32px 36px', background: 'linear-gradient(145deg, #0f172a, #1e293b)', borderRadius: 24, color: '#f8fafc', boxShadow: '0 20px 40px rgba(0,0,0,0.15)', border: '1px solid rgba(255,255,255,0.05)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20 }}>
+        <div style={{ background: 'var(--accent)', width: 44, height: 44, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, color: '#fff', boxShadow: '0 8px 16px rgba(255,154,0,0.3)' }}>💡</div>
+        <div>
+          <h3 style={{ margin: 0, color: '#fff', fontSize: 20, fontWeight: 800 }}>算法报告摘要：工业多参数影响分析</h3>
+          <div style={{ fontSize: 13, color: '#94a3b8', fontWeight: 500, letterSpacing: '0.02em' }}>Automatic Industrial Analytics Summary & Insights</div>
+        </div>
+      </div>
+      
+      <div style={{ display: 'grid', gridTemplateColumns: '7fr 5fr', gap: 32 }}>
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#cbd5e1', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>📘 算法简介</div>
+          <p style={{ fontSize: 14, color: '#94a3b8', lineHeight: 1.8, marginBottom: 0 }}>
+            该算法旨在从全量工艺变量中剥离出真正关键的影响因子，通过分析变量间复杂的非线性交互作用，锁定导致目标波动的核心工况窗口。
+            目前的分析结果基于模型对已有工况的“黑盒”拆解，目的是找出具有高鲁棒性的参数子集，为您调整工艺窗口提供客观依据。
+          </p>
+        </div>
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#cbd5e1', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>🚩 关键因子权重 (Influential Factors)</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {topFeatures.length > 0 ? topFeatures.map((f, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(255,255,255,0.03)', padding: '8px 14px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.05)' }}>
+                <span style={{ fontSize: 16, fontWeight: 800, color: 'var(--accent)', opacity: 0.6 }}>0{i+1}</span>
+                <span style={{ fontSize: 14, color: '#e2e8f0', fontWeight: 600 }}>{f}</span>
+              </div>
+            )) : <span style={{ color: '#64748b', fontSize: 13, padding: '10px', background: 'rgba(0,0,0,0.2)', borderRadius: 8, textAlign: 'center' }}>暂未匹配到显著影响因子</span>}
+          </div>
+        </div>
+      </div>
+
+      <div style={{ marginTop: 28, display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {topRule ? (
+          <div style={{ background: 'rgba(52,211,153,0.08)', borderLeft: '4px solid #10b981', padding: '20px 24px', borderRadius: '4px 16px 16px 4px', border: '1px solid rgba(52,211,153,0.15)', position: 'relative' }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: '#10b981', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>
+               ✅ 最佳工况识别结论 (Dominant Advantageous Condition)
+            </div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: '#fff', lineHeight: 1.6 }}>
+               {topRule}
+            </div>
+          </div>
+        ) : (
+          <div style={{ padding: 20, border: '1px dashed rgba(255,255,255,0.1)', borderRadius: 16, textAlign: 'center', color: '#64748b', fontSize: 13 }}>
+            ⚠️ 系统未能自动提取出具体的最优工况组合，请查阅下方的「综合规则诊断」详细列表。
+          </div>
+        )}
+
+        {worstRule && (
+          <div style={{ background: 'rgba(239,68,68,0.08)', borderLeft: '4px solid #ef4444', padding: '20px 24px', borderRadius: '4px 16px 16px 4px', border: '1px solid rgba(239,68,68,0.15)', position: 'relative' }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: '#ef4444', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>
+               ⚠️ 潜在高风险预警 (Critical Warning)
+            </div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: '#fca5a5', lineHeight: 1.6 }}>
+               应避免：{worstRule}
+            </div>
+          </div>
+        )}
+      </div>
+      
+      <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'flex-end' }}>
+        <div style={{ fontSize: 11, color: '#64748b' }}>* 该分析结果由系统根据当前数据集自动生成，实际干预建议先行小范围验证。</div>
       </div>
     </div>
   );

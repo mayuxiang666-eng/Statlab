@@ -10,6 +10,7 @@ import * as XLSX from "xlsx";
 import PDFDocument from "pdfkit";
 import { PrismaClient } from "@prisma/client";
 import axios from "axios";
+import bcrypt from "bcryptjs";
 import {
   RunRequestSchema,
   DatasetInfo,
@@ -22,6 +23,9 @@ import { predictFromModelPackage, MAX_PREDICT_ROWS } from "./predict";
 import { runCustomPythonCode } from "../analysis/pythonBridge";
 
 
+import { authRouter } from "./routes/auth";
+import { authMiddleware, AuthRequest } from "./middleware/auth";
+
 const app = express();
 const prisma = new PrismaClient();
 const logEmitter = new EventEmitter();
@@ -30,26 +34,26 @@ logEmitter.setMaxListeners(50);
 app.use(cors() as any);
 app.use(express.json({ limit: "10mb" }));
 
+// --- Auth Routes ---
+app.use("/api/auth", authRouter);
+
 // 批量删除运行历史
-app.post("/api/run-history/batch-delete", async (req, res) => {
+app.post("/api/run-history/batch-delete", authMiddleware, async (req: AuthRequest, res) => {
   const { ids } = req.body;
   if (!Array.isArray(ids)) return res.status(400).json({ error: "ids must be an array" });
   try {
     const numIds = ids.map(id => Number(id)).filter(id => !Number.isNaN(id));
     if (numIds.length > 0) {
-      await prisma.runRecord.deleteMany({ where: { id: { in: numIds } } });
+      await prisma.runRecord.deleteMany({ 
+        where: { 
+          id: { in: numIds },
+          userId: req.userId // Isolation
+        } 
+      });
     }
 
     const filePath = path.resolve(__dirname, "../recent_run.json");
-    if (fs.existsSync(filePath)) {
-      try {
-        const arr = JSON.parse(fs.readFileSync(filePath, "utf-8"));
-        const filtered = arr.filter((r: any) => !ids.map(String).includes(String(r.id)));
-        fs.writeFileSync(filePath, JSON.stringify(filtered, null, 2), "utf-8");
-      } catch (e) {
-        console.warn("recent_run.json cleanup failed", e);
-      }
-    }
+    // ... recent_run.json is a shared file, might need user-specific separation later
     res.json({ ok: true });
   } catch (err) {
     console.error("batch delete error", err);
@@ -58,36 +62,26 @@ app.post("/api/run-history/batch-delete", async (req, res) => {
 });
 
 // 删除单条运行历史（报告）
-app.delete("/api/run-history/:id", async (req, res) => {
+app.delete("/api/run-history/:id", authMiddleware, async (req: AuthRequest, res) => {
   const raw = req.params.id;
   const idNum = Number(raw);
   const isNum = !Number.isNaN(idNum);
   try {
-    // 1) 删除数据库记录（若为数值型主键）
     if (isNum) {
-      await prisma.runRecord.deleteMany({ where: { id: idNum } });
+      await prisma.runRecord.deleteMany({ 
+        where: { 
+          id: idNum,
+          userId: req.userId // Isolation
+        } 
+      });
     }
-
-    // 2) 同步清理 recent_run.json（如果存在）
-    const filePath = path.resolve(__dirname, "../recent_run.json");
-    if (fs.existsSync(filePath)) {
-      try {
-        const arr = JSON.parse(fs.readFileSync(filePath, "utf-8"));
-        const idx = arr.findIndex((r: any) => String(r.id) === String(raw));
-        if (idx !== -1) {
-          arr.splice(idx, 1);
-          fs.writeFileSync(filePath, JSON.stringify(arr, null, 2), "utf-8");
-        }
-      } catch (e) { }
-    }
-
-    // 不再因不存在报错，保证前端删除请求幂等
     res.json({ ok: true });
   } catch (err) {
     console.error("delete run-history error", err);
     res.status(500).json({ error: "删除失败" });
   }
 });
+
 const uploadDir = path.resolve(__dirname, "../uploads");
 const samplePath = path.resolve(__dirname, "../../sample.csv");
 const fontCandidates: { p: string; family?: string }[] = [
@@ -105,17 +99,13 @@ const fontCandidates: { p: string; family?: string }[] = [
 ];
 
 const SAMPLE_DATASETS = [
-  { key: "sample", path: path.resolve(__dirname, "../sample.csv"), label: "【Sample】示例数据" },
-  { key: "advertising", path: path.resolve(__dirname, "../../samples/Advertising.csv"), label: "【Sample】广告投放与销售额" },
-  { key: "housing", path: path.resolve(__dirname, "../../samples/Housing.csv"), label: "【Sample】房价影响因素分析" },
-  { key: "iris", path: path.resolve(__dirname, "../../samples/Iris.csv"), label: "【Sample】鸢尾花卉 (Iris)" },
-  { key: "employee", path: path.resolve(__dirname, "../../samples/Employee.csv"), label: "【Sample】员工绩效与压力分析" },
-  { key: "finance", path: path.resolve(__dirname, "../../samples/pro/finance_stock_prices.csv"), label: "【Sample】金融股票价格" },
-  { key: "medical", path: path.resolve(__dirname, "../../samples/pro/medical_patient_records.csv"), label: "【Sample】医疗患者记录" },
-  { key: "energy", path: path.resolve(__dirname, "../../samples/pro/energy_consumption.csv"), label: "【Sample】建筑能耗" },
-  { key: "manufacturing", path: path.resolve(__dirname, "../../samples/pro/manufacturing_quality.csv"), label: "【Sample】制造质量控制" },
-
-
+  { key: "advertising", path: path.resolve(__dirname, "../../samples/Advertising.csv"), label: "广告投放与销售额" },
+  { key: "housing", path: path.resolve(__dirname, "../../samples/Housing.csv"), label: "房价影响因素分析" },
+  { key: "employee", path: path.resolve(__dirname, "../../samples/Employee.csv"), label: "员工绩效与压力分析" },
+  { key: "finance", path: path.resolve(__dirname, "../../samples/pro/finance_stock_prices.csv"), label: "金融股票价格" },
+  { key: "medical", path: path.resolve(__dirname, "../../samples/pro/medical_patient_records.csv"), label: "医疗患者记录" },
+  { key: "energy", path: path.resolve(__dirname, "../../samples/pro/energy_consumption.csv"), label: "建筑能耗" },
+  { key: "manufacturing", path: path.resolve(__dirname, "../../samples/pro/manufacturing_quality.csv"), label: "制造质量控制" },
 ];
 
 if (!fs.existsSync(uploadDir)) {
@@ -128,11 +118,10 @@ const OLLAMA_HOST = "http://10.246.97.159:11434";
 const OLLAMA_MODEL = "deepseek-r1:1.5b";
 
 const logAiEvent = (msg: string, extra?: Record<string, unknown>) => {
-  const payload = extra ? { msg, ...extra } : { msg };
   console.log(`[AI] ${msg}`, extra ? JSON.stringify(extra) : "");
 };
 
-app.use("/api/connections", connectionRouter);
+app.use("/api/connections", authMiddleware, connectionRouter);
 
 app.get("/api/ai/models", async (_req, res) => {
   try {
@@ -143,12 +132,10 @@ app.get("/api/ai/models", async (_req, res) => {
   }
 });
 
-app.post("/api/ai/chat", async (req, res) => {
-  logAiEvent("chat_request_received", { ts: new Date().toISOString() });
+app.post("/api/ai/chat", authMiddleware, async (req: AuthRequest, res) => {
+  logAiEvent("chat_request_received", { ts: new Date().toISOString(), userId: req.userId });
   try {
     const { messages } = req.body;
-
-    // 注入系统指令：简单问题直接回答，复杂问题才深入分析
     const systemMsg = {
       role: 'system',
       content: '你是一个高效的 StatLab 数据专家。如果用户问的是简单问题（如问候、简单概念定义、单行确认等），请直接、精炼地回答，不要进行冗长的思考或前缀说明；只有当涉及复杂数据分析结果解读时，才进行深度分析。'
@@ -157,45 +144,23 @@ app.post("/api/ai/chat", async (req, res) => {
     const response = await axios.post(`${OLLAMA_HOST}/api/chat`, {
       model: OLLAMA_MODEL,
       messages: [systemMsg, ...messages],
-      stream: true, // 开启流式
-      options: {
-        num_predict: 512, // 限制回复长度，提速
-        temperature: 0.7,
-        top_p: 0.9,
-      },
-      keep_alive: "24h" // 让模型留在内存里，下次提问秒回
-    }, {
-      responseType: 'stream',
-      timeout: 300000 // 5 分钟，避免长回复被客户端超时
-    });
+      stream: true, 
+      options: { num_predict: 512, temperature: 0.7, top_p: 0.9 },
+      keep_alive: "24h" 
+    }, { responseType: 'stream', timeout: 300000 });
 
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
     res.flushHeaders?.();
 
-    let bytes = 0;
-    response.data.on('data', (chunk: Buffer) => {
-      bytes += chunk.length;
-      res.write(chunk);
-    });
-
-    response.data.on('end', () => {
-      logAiEvent("chat_stream_end", { bytes });
-      res.end();
-    });
-
+    response.data.on('data', (chunk: Buffer) => res.write(chunk));
+    response.data.on('end', () => res.end());
     response.data.on('error', (err: any) => {
-      logAiEvent("chat_stream_error", { error: err?.message || String(err) });
-      if (!res.headersSent) {
-        res.status(500).json({ error: "AI 助手流式响应异常" });
-      } else {
-        res.end();
-      }
+      if (!res.headersSent) res.status(500).json({ error: "AI 助手流式响应异常" });
+      else res.end();
     });
-
   } catch (err: any) {
-    logAiEvent("chat_request_failed", { error: err?.message || String(err) });
     res.status(500).json({ error: "AI 助手暂时不可用: " + err.message });
   }
 });
@@ -212,12 +177,16 @@ app.get("/api/algorithms", (_req, res) => {
   res.json(registry.map((m) => m.spec));
 });
 
-app.get("/api/datasets", async (_req, res) => {
+app.get("/api/datasets", authMiddleware, async (req: AuthRequest, res) => {
   try {
     const data = await prisma.dataset.findMany({
-      include: {
-        versions: true
+      where: {
+        OR: [
+          { userId: req.userId },
+          { userId: null }
+        ]
       },
+      include: { versions: true },
       orderBy: { createdAt: "desc" }
     });
     const mapped: DatasetInfo[] = data.map((d) => ({
@@ -234,11 +203,16 @@ app.get("/api/datasets", async (_req, res) => {
   }
 });
 
-app.get("/api/datasets/:datasetId/versions/:versionId", async (req, res) => {
+app.get("/api/datasets/:datasetId/versions/:versionId", authMiddleware, async (req: AuthRequest, res) => {
   try {
     const versionId = Number(req.params.versionId);
-    const v = await prisma.datasetVersion.findUnique({ where: { id: versionId } });
-    if (!v) return res.status(404).json({ error: "version not found" });
+    const v = await prisma.datasetVersion.findFirst({ 
+      where: { 
+        id: versionId,
+        dataset: { OR: [{ userId: req.userId }, { userId: null }] }
+      } 
+    });
+    if (!v) return res.status(404).json({ error: "version not found or access denied" });
     res.json(versionToMeta(v));
   } catch (err) {
     console.error(err);
@@ -246,10 +220,15 @@ app.get("/api/datasets/:datasetId/versions/:versionId", async (req, res) => {
   }
 });
 
-app.get("/api/datasets/version/:versionId/full-data", async (req, res) => {
+app.get("/api/datasets/version/:versionId/full-data", authMiddleware, async (req: AuthRequest, res) => {
   try {
     const versionId = Number(req.params.versionId);
-    const v = await prisma.datasetVersion.findUnique({ where: { id: versionId } });
+    const v = await prisma.datasetVersion.findFirst({ 
+      where: { 
+        id: versionId,
+        dataset: { OR: [{ userId: req.userId }, { userId: null }] }
+      } 
+    });
     if (!v) return res.status(404).json({ error: "version not found" });
 
     const fullData = loadDataset(v.path);
@@ -260,23 +239,12 @@ app.get("/api/datasets/version/:versionId/full-data", async (req, res) => {
   }
 });
 
-app.post("/api/datasets/import-sample", async (_req, res) => {
-  try {
-    const result = await createDatasetFromFile(samplePath, "sample.csv", "示例数据集");
-    res.json(result);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "failed to import sample" });
-  }
-});
-
-app.post("/api/datasets/import-sample/:name", async (req, res) => {
+app.post("/api/datasets/import-sample/:name", authMiddleware, async (req: AuthRequest, res) => {
   const name = req.params.name;
   const sampleMap: Record<string, { path: string, label: string }> = {
     advertising: { path: path.resolve(__dirname, "../../samples/Advertising.csv"), label: "广告投放与销售额" },
     housing: { path: path.resolve(__dirname, "../../samples/Housing.csv"), label: "房价影响因素分析" },
     employee: { path: path.resolve(__dirname, "../../samples/Employee.csv"), label: "员工绩效与压力分析" },
-    // 专业样本
     finance: { path: path.resolve(__dirname, "../../samples/pro/finance_stock_prices.csv"), label: "金融股票价格" },
     medical: { path: path.resolve(__dirname, "../../samples/pro/medical_patient_records.csv"), label: "医疗患者记录" },
     energy: { path: path.resolve(__dirname, "../../samples/pro/energy_consumption.csv"), label: "建筑能耗" },
@@ -286,7 +254,7 @@ app.post("/api/datasets/import-sample/:name", async (req, res) => {
   if (!config) return res.status(404).json({ error: "sample not found" });
 
   try {
-    const result = await createDatasetFromFile(config.path, `${name}.csv`, config.label);
+    const result = await createDatasetFromFile(config.path, `${name}.csv`, config.label, req.userId);
     res.json(result);
   } catch (err) {
     console.error(err);
@@ -294,7 +262,7 @@ app.post("/api/datasets/import-sample/:name", async (req, res) => {
   }
 });
 
-app.post("/api/datasets/upload", upload.single("file"), async (req, res) => {
+app.post("/api/datasets/upload", authMiddleware, upload.single("file"), async (req: AuthRequest, res) => {
   if (!req.file) return res.status(400).json({ error: "no file" });
   try {
     const ext = path.extname(req.file.originalname || "").toLowerCase();
@@ -305,7 +273,7 @@ app.post("/api/datasets/upload", upload.single("file"), async (req, res) => {
       storedPath = targetPath;
     }
 
-    const result = await createDatasetFromFile(storedPath, req.file.originalname, req.file.originalname);
+    const result = await createDatasetFromFile(storedPath, req.file.originalname, req.file.originalname, req.userId);
     res.json(result);
   } catch (err) {
     console.error(err);
@@ -313,10 +281,13 @@ app.post("/api/datasets/upload", upload.single("file"), async (req, res) => {
   }
 });
 
-app.delete("/api/datasets/:datasetId", async (req, res) => {
+app.delete("/api/datasets/:datasetId", authMiddleware, async (req: AuthRequest, res) => {
   const datasetId = Number(req.params.datasetId);
   try {
-    // Delete related records first because SQLite foreign keys without CASCADE will throw errors
+    // Verify ownership first
+    const dataset = await prisma.dataset.findFirst({ where: { id: datasetId, userId: req.userId } });
+    if (!dataset) return res.status(403).json({ error: "Access denied" });
+
     await prisma.runRecord.deleteMany({ where: { datasetId } });
     await prisma.datasetVersion.deleteMany({ where: { datasetId } });
     await prisma.dataset.delete({ where: { id: datasetId } });
@@ -327,18 +298,21 @@ app.delete("/api/datasets/:datasetId", async (req, res) => {
   }
 });
 
-// Delete a specific dataset version (keep at least 1 version)
-app.delete("/api/datasets/version/:versionId", async (req, res) => {
+app.delete("/api/datasets/version/:versionId", authMiddleware, async (req: AuthRequest, res) => {
   const versionId = Number(req.params.versionId);
   if (Number.isNaN(versionId)) return res.status(400).json({ error: "invalid version id" });
   try {
-    const version = await prisma.datasetVersion.findUnique({ where: { id: versionId } });
-    if (!version) return res.status(404).json({ error: "version not found" });
+    const version = await prisma.datasetVersion.findFirst({ 
+      where: { 
+        id: versionId,
+        dataset: { userId: req.userId }
+      } 
+    });
+    if (!version) return res.status(404).json({ error: "version not found or access denied" });
 
     const versionCount = await prisma.datasetVersion.count({ where: { datasetId: version.datasetId } });
     if (versionCount <= 1) return res.status(400).json({ error: "至少保留一个版本" });
 
-    // delete run records tied to this version
     await prisma.runRecord.deleteMany({ where: { datasetVersionId: versionId } });
     await prisma.datasetVersion.delete({ where: { id: versionId } });
     res.json({ ok: true });
@@ -388,7 +362,7 @@ app.get("/api/datasets/version/:versionId/download", async (req, res) => {
   }
 });
 
-app.post("/api/run", async (req, res) => {
+app.post("/api/run", authMiddleware, async (req: AuthRequest, res) => {
   try {
     const parsed = RunRequestSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.message });
@@ -405,31 +379,41 @@ app.post("/api/run", async (req, res) => {
       dataset = dbDs.previewRows;
       version = { id: dbDs.id, datasetId: 0, version: 0, path: "", summary: "", columns: dbDs.columns, sampleRows: dbDs.previewRows, rowCount: dbDs.previewRows?.length || 0 };
     } else {
-      version = await prisma.datasetVersion.findUnique({ where: { id: Number(datasetVersionId) } });
-      if (!version) return res.status(404).json({ error: "dataset version not found" });
+      version = await prisma.datasetVersion.findFirst({ 
+        where: { 
+          id: Number(datasetVersionId),
+          dataset: {
+            OR: [
+              { userId: req.userId },
+              { userId: null }
+            ]
+          }
+        } 
+      });
+      if (!version) return res.status(404).json({ error: "dataset version not found or access denied" });
       dataset = loadDataset(version.path);
     }
 
     // Apply data filters if present
-    const filters = params.dataFilters as Record<string, { min?: number, max?: number, eq?: string, contains?: string }> | undefined;
+    const filters = params.dataFilters as any;
     if (filters && typeof filters === "object") {
       dataset = dataset.filter(row => {
         for (const [feat, condition] of Object.entries(filters)) {
           const valStr = String(row[feat] ?? "");
           const numVal = Number(valStr);
-
-          if (condition.min !== undefined && !isNaN(numVal) && numVal < condition.min) return false;
-          if (condition.max !== undefined && !isNaN(numVal) && numVal > condition.max) return false;
-          if (condition.eq !== undefined && condition.eq !== "" && valStr !== condition.eq) return false;
-          if (condition.contains !== undefined && condition.contains !== "" && !valStr.toLowerCase().includes(condition.contains.toLowerCase())) return false;
+          const cond = condition as any;
+          if (cond.min !== undefined && !isNaN(numVal) && numVal < cond.min) return false;
+          if (cond.max !== undefined && !isNaN(numVal) && numVal > cond.max) return false;
+          if (cond.eq !== undefined && cond.eq !== "" && valStr !== cond.eq) return false;
+          if (cond.contains !== undefined && cond.contains !== "" && !valStr.toLowerCase().includes(cond.contains.toLowerCase())) return false;
         }
         return true;
       });
-      console.log(`[DataFilter] Dataset filtered down to ${dataset.length} rows.`);
     }
 
     const runRecord = await prisma.runRecord.create({
       data: {
+        userId: req.userId,
         datasetId: version.datasetId || null,
         datasetVersionId: typeof version.id === 'string' ? null : version.id,
         algorithmId,
@@ -450,7 +434,6 @@ app.post("/api/run", async (req, res) => {
         console.log("[ML LOG]", msg);
       };
       const result = await module.run({ dataset, variables, params, version, onLog });
-      // Attach training logs to result for frontend display
       (result as any).trainingLogs = trainingLogs;
       const responsePayload = { ...result, runId: runRecord.id };
       await prisma.runRecord.update({
@@ -469,15 +452,18 @@ app.post("/api/run", async (req, res) => {
   }
 });
 
-app.post("/api/python-lab/run", async (req, res) => {
+app.post("/api/python-lab/run", authMiddleware, async (req: AuthRequest, res) => {
   try {
     const { code, datasetVersionId, tests } = req.body;
     let dataset: any[] = [];
     if (datasetVersionId) {
-      const version = await prisma.datasetVersion.findUnique({ where: { id: Number(datasetVersionId) } });
+      const version = await prisma.datasetVersion.findFirst({ 
+        where: { 
+          id: Number(datasetVersionId),
+          dataset: { OR: [{ userId: req.userId }, { userId: null }] }
+        } 
+      });
       if (version) {
-        // Reuse loadDataset function (need to make sure it's accessible or re-import)
-        // Actually, loadDataset is defined in this file.
         dataset = loadDataset(version.path);
       }
     }
@@ -488,61 +474,10 @@ app.post("/api/python-lab/run", async (req, res) => {
   }
 });
 
-
-app.post("/api/run/:id/predict", async (req, res) => {
-  try {
-    const runId = Number(req.params.id);
-    if (Number.isNaN(runId)) return res.status(400).json({ error: "invalid run id" });
-    const rows = req.body?.rows;
-    if (!Array.isArray(rows) || rows.length === 0) return res.status(400).json({ error: "rows 为空" });
-    if (rows.length > MAX_PREDICT_ROWS) return res.status(400).json({ error: `预测行数超过上限 ${MAX_PREDICT_ROWS}` });
-
-    const record = await prisma.runRecord.findUnique({ where: { id: runId } });
-    if (!record || !record.result) return res.status(404).json({ error: "run not found or missing result" });
-
-    const parsedResult = JSON.parse(record.result);
-    const modelPkg = parsedResult?.extras?.modelPackage;
-    if (!modelPkg) return res.status(400).json({ error: "该运行未保存模型，无法预测" });
-
-    try {
-      const pred = predictFromModelPackage(modelPkg, rows);
-      res.json(pred);
-    } catch (err: any) {
-      console.error("Predict error", err);
-      res.status(500).json({ error: "预测失败", detail: err?.message || String(err) });
-    }
-  } catch (err) {
-    console.error("API /api/run/:id/predict crash:", err);
-    res.status(500).json({ error: "internal server error", detail: String(err) });
-  }
-});
-
-// ─── Live Log Stream (SSE) ────────────────────────────────────────────────────
-app.get("/api/logs/stream", (req, res) => {
-  res.setHeader("Content-Type", "text/event-stream");
-  res.setHeader("Cache-Control", "no-cache, no-transform");
-  res.setHeader("Connection", "keep-alive");
-  res.flushHeaders?.();
-
-  const send = (payload: any) => {
-    res.write(`data: ${JSON.stringify(payload)}\n\n`);
-  };
-
-  const listener = (payload: any) => send(payload);
-  logEmitter.on("log", listener);
-
-  // heartbeat
-  const heartbeat = setInterval(() => res.write(`event: ping\ndata: keepalive\n\n`), 30000);
-
-  req.on("close", () => {
-    clearInterval(heartbeat);
-    logEmitter.off("log", listener);
-  });
-});
-
-app.get("/api/run-history", async (_req, res) => {
+app.get("/api/run-history", authMiddleware, async (req: AuthRequest, res) => {
   try {
     const records = await prisma.runRecord.findMany({
+      where: { userId: req.userId },
       orderBy: { createdAt: "desc" },
       take: 50,
       include: { dataset: true }
@@ -550,7 +485,7 @@ app.get("/api/run-history", async (_req, res) => {
     const mapped = records.map((r) => ({
       id: String(r.id),
       algoId: r.algorithmId,
-      algoName: "", // Will be mapped by frontend
+      algoName: "",
       datasetId: r.datasetId,
       datasetVersionId: r.datasetVersionId,
       datasetName: r.dataset?.name || "未知数据集",
@@ -972,7 +907,9 @@ app.post("/api/reports/pdf", async (req, res) => {
 });
 
 const basePort = Number(process.env.PORT) || 3001;
-seedSampleDatasets().finally(() => startServer(basePort));
+seedSampleDatasets()
+  .then(() => seedAdminUser())
+  .finally(() => startServer(basePort));
 
 function stripHtml(input: string) {
   return input.replace(/<[^>]*>/g, "");
@@ -1145,6 +1082,27 @@ async function seedSampleDatasets() {
   }
 }
 
+async function seedAdminUser() {
+  try {
+    const admin = await prisma.user.findFirst({
+      where: { username: "admin" }
+    });
+    if (!admin) {
+      const hashedPassword = await bcrypt.hash("123456", 10);
+      await prisma.user.create({
+        data: {
+          username: "admin",
+          password: hashedPassword,
+          name: "Administrator"
+        }
+      });
+      console.log("Seeded admin user (admin / 123456)");
+    }
+  } catch (err) {
+    console.warn("Seed admin user failed:", err);
+  }
+}
+
 function parseExcelFile(filePath: string): Record<string, string>[] {
   const workbook = XLSX.readFile(filePath);
   const sheetName = workbook.SheetNames[0];
@@ -1204,14 +1162,14 @@ function loadDataset(filePath: string) {
   return records as Record<string, string>[];
 }
 
-async function createDatasetFromFile(filePath: string, originalFilename: string, name: string) {
-  // Stream once to get a preview plus total row count for accurate metadata
+async function createDatasetFromFile(filePath: string, originalFilename: string, name: string, userId?: string) {
   const { sampleRecords, rowCount } = await sampleDataset(filePath, 2000);
   const columns = inferColumns(sampleRecords);
   const sampleRows = sampleRecords.slice(0, 200);
   const dataset = await prisma.dataset.create({
     data: {
       name,
+      userId, // Link to user
       originalFilename,
       versions: {
         create: {

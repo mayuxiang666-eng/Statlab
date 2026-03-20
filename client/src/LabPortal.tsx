@@ -48,75 +48,45 @@ interface Achievement {
 // ─── Mock Data (courseId maps to LAB_COURSES ids) ────────────────────────────
 const MOCK_NOTEBOOKS: Notebook[] = [
   {
-    id: 'nb1', courseId: 'ch0_eda', title: '广告投放数据 EDA', stage: 1,
-    skills: ['数据预览', '缺失值处理', '散点图'],
+    id: 'nb1', courseId: 'lesson_1', title: '模型是如何工作的？', stage: 1,
+    skills: ['决策树概念', '模型训练思想', '预测原理'],
     completedAt: '2026-03-10', accuracy: 100, status: 'completed'
   },
   {
-    id: 'nb2', courseId: 'ch1_linear', title: '房价预测：线性回归', stage: 2,
-    skills: ['模型训练', 'R² 分数', 'RMSE'],
+    id: 'nb2', courseId: 'lesson_2', title: '基础数据探索', stage: 2,
+    skills: ['Pandas', '统计摘要', '数据预览'],
     completedAt: '2026-03-14', accuracy: 92, status: 'completed'
   },
   {
-    id: 'nb3', courseId: 'ch2_feature', title: '员工绩效：Pipeline 管道化', stage: 3,
-    skills: ['标准化', 'Pipeline', '交叉验证'],
+    id: 'nb3', courseId: 'lesson_3', title: '你的第一个机器学习模型', stage: 3,
+    skills: ['特征选择', '模型训练', '拟合'],
     status: 'in-progress'
   },
   {
-    id: 'nb4', courseId: 'ch3_classification', title: '工厂质量控制：随机森林分类', stage: 4,
-    skills: ['分类', '特征重要度', '迷你项目'], status: 'locked'
+    id: 'nb4', courseId: 'lesson_4', title: '模型验证', stage: 4,
+    skills: ['MAE', '数据切分', '评估'], status: 'locked'
   },
 ];
 
 const MOCK_ASSIGNMENTS: Assignment[] = [
   {
-    id: 'a1', courseId: 'ch0_eda', title: 'EDA 练习：销售效率特征', stage: 1,
-    description: '创建 sales_per_tv 列并确认无缺失值。',
-    tests: ['assert "sales_per_tv" in df.columns', 'assert df.isna().sum().sum() == 0'],
-    hints: ['使用 df["Sales"] / (df["TV"] + 1e-6)', '先运行均值填补单元格'],
+    id: 'a1', courseId: 'lesson_2', title: '数据探索练习：价格摘要', stage: 2,
+    description: '使用 describe() 函数。',
+    tests: ['assert "average_price" in locals()'],
+    hints: ['使用 df["Price"].mean()'],
     dueLabel: '已完成', status: 'passed',
-    code: 'df["sales_per_tv"] = df["Sales"] / (df["TV"] + 1e-6)',
-    feedback: { type: 'pass', message: '完美！sales_per_tv 特征已成功创建，数据集无缺失值。练习全部通过！' }
-  },
-  {
-    id: 'a2', courseId: 'ch1_linear', title: '回归练习：保存 R² 与 RMSE', stage: 2,
-    description: '将 R² 保存到 r2，将 RMSE 保存到 rmse 变量。',
-    tests: ['assert "r2" in locals()', 'assert "rmse" in locals()', 'assert r2 > 0'],
-    hints: ['r2 = r2_score(y_test, y_pred)', 'rmse = mean_squared_error(..., squared=False)'],
-    dueLabel: '进行中', status: 'partial',
-    code: 'r2 = r2_score(y_test, y_pred)\n# rmse 尚未定义',
-    feedback: {
-      type: 'partial',
-      message: '快到了！r2 变量已正确定义，但 rmse 变量还缺失。',
-      hint: '在 r2 的下一行添加：',
-      code: 'rmse = mean_squared_error(y_test, y_pred, squared=False)'
-    }
-  },
-  {
-    id: 'a3', courseId: 'ch2_feature', title: '特征管道练习：交叉验证得分', stage: 3,
-    description: '构建 Pipeline 并输出 cross_val_score 均值到 mean_cv。',
-    tests: ['assert "mean_cv" in locals()', 'assert mean_cv > 0'],
-    hints: ['cross_val_score(pipeline, X_feat, y_feat, cv=3)', 'mean_cv = scores.mean()'],
-    dueLabel: '待完成', status: 'pending',
-    code: '',
-    feedback: undefined
+    code: 'average_price = df["Price"].mean()',
+    feedback: { type: 'pass', message: '完美！你已掌握基础统计。' }
   },
 ];
 
 const MOCK_ACHIEVEMENTS: Achievement[] = [
   {
-    id: 'ach1', title: 'Stage 1 完成', stage: 1,
-    description: '出色！你已掌握 Python 数据分析的三大基本工具。',
-    skills: ['认识 DataFrame', '缺失值处理', '派生特征', '散点图'],
-    projectName: '广告效果分析报告', projectAccuracy: '100%', projectEfficiency: 'A+',
-    completedAt: '2026-03-10', nextCourseId: 'ch1_linear'
-  },
-  {
-    id: 'ach2', title: 'Stage 2 完成', stage: 2,
-    description: '做得好！你成功构建了第一个机器学习回归模型。',
-    skills: ['数据划分', 'LinearRegression', 'R² 分数', 'RMSE 误差'],
-    projectName: '房价预测模型', projectAccuracy: '92%', projectEfficiency: 'A',
-    completedAt: '2026-03-14', nextCourseId: 'ch2_feature'
+    id: 'ach1', title: '入门掌握者', stage: 1,
+    description: '你已经理解了机器学习模型的工作原理。',
+    skills: ['预测思维', '决策树概念'],
+    projectName: '模型原理理解', projectAccuracy: '100%', projectEfficiency: 'A+',
+    completedAt: '2026-03-10', nextCourseId: 'lesson_2'
   },
 ];
 

@@ -7,11 +7,24 @@ generator client {
   provider = "prisma-client-js"
 }
 
+model User {
+  id               String            @id @default(uuid())
+  username         String            @unique
+  password         String            // hashed
+  name             String?
+  createdAt        DateTime          @default(now())
+  datasets         Dataset[]
+  runs             RunRecord[]
+  connections      SavedConnection[]
+}
+
 model Dataset {
   id               Int               @id @default(autoincrement())
+  userId           String?           
   name             String
   originalFilename String
   createdAt        DateTime          @default(now())
+  user             User?             @relation(fields: [userId], references: [id])
   versions         DatasetVersion[]
   runs             RunRecord[]
 }
@@ -29,6 +42,7 @@ model DatasetVersion {
 
 model RunRecord {
   id               Int       @id @default(autoincrement())
+  userId           String?
   datasetId        Int?
   datasetVersionId Int?
   algorithmId      String
@@ -40,12 +54,14 @@ model RunRecord {
   log              String?
   analysisName     String?
   analystName      String?
+  user             User?    @relation(fields: [userId], references: [id])
   dataset          Dataset? @relation(fields: [datasetId], references: [id])
   datasetVersion   DatasetVersion? @relation(fields: [datasetVersionId], references: [id])
 }
 
 model SavedConnection {
   id        String   @id @default(uuid())
+  userId    String?
   name      String
   type      String   // mssql, postgres
   host      String
@@ -54,4 +70,5 @@ model SavedConnection {
   user      String
   password  String   // Encrypted
   createdAt DateTime @default(now())
+  owner     User?    @relation(fields: [userId], references: [id])
 }
