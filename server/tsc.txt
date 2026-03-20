@@ -1,0 +1,10 @@
+﻿../node_modules/ml-random-forest/types/types.d.ts(25,6): error TS1036: Statements are not allowed in ambient contexts.
+../node_modules/ml-random-forest/types/types.d.ts(27,22): error TS2304: Cannot find name 'DecisionTreeClassifier'.
+../node_modules/ml-random-forest/types/types.d.ts(27,47): error TS2304: Cannot find name 'DecisionTreeRegression'.
+../node_modules/ml-random-forest/types/types.d.ts(29,36): error TS2689: Cannot extend an interface 'RandomForestBaseOptions'. Did you mean 'implements'?
+../node_modules/ml-random-forest/types/types.d.ts(175,5): error TS2666: Exports and export assignments are not permitted in module augmentations.
+../node_modules/tedious/lib/connection.d.ts(746,29): error TS2304: Cannot find name 'AggregateError'.
+../node_modules/tedious/lib/errors.d.ts(4,59): error TS2304: Cannot find name 'ErrorOptions'.
+../node_modules/tedious/lib/errors.d.ts(14,59): error TS2304: Cannot find name 'ErrorOptions'.
+analysis/modules/xgboostReg.ts(75,31): error TS2339: Property 'getImportances' does not exist on type 'RandomForestRegression'.
+analysis/modules/xgboostReg.ts(76,14): error TS2339: Property 'getImportances' does not exist on type 'RandomForestRegression'.

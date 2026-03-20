@@ -1,0 +1,52 @@
+[
+  {
+    "id": 14,
+    "alg": "ml.interpret",
+    "status": "completed"
+  },
+  {
+    "id": 13,
+    "alg": "ml.ridge",
+    "status": "completed"
+  },
+  {
+    "id": 12,
+    "alg": "academic.correlation",
+    "status": "completed"
+  },
+  {
+    "id": 11,
+    "alg": "academic.correlation",
+    "status": "completed"
+  },
+  {
+    "id": 10,
+    "alg": "academic.correlation",
+    "status": "completed"
+  },
+  {
+    "id": 9,
+    "alg": "academic.correlation",
+    "status": "completed"
+  },
+  {
+    "id": 8,
+    "alg": "academic.correlation",
+    "status": "completed"
+  },
+  {
+    "id": 7,
+    "alg": "academic.correlation",
+    "status": "completed"
+  },
+  {
+    "id": 6,
+    "alg": "academic.correlation",
+    "status": "completed"
+  },
+  {
+    "id": 5,
+    "alg": "academic.correlation",
+    "status": "completed"
+  }
+]

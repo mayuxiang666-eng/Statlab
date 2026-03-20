@@ -1,0 +1,15 @@
+node_modules
+npm-debug.log*
+dist
+.DS_Store
+.env
+server/uploads
+server/db/*.sqlite
+server/db/*.db-journal
+client/node_modules
+server/node_modules
+shared/node_modules
+coverage
+deploy_bundle
+server/release
+server/.env.production

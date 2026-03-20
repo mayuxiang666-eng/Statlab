@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "CommonJS",
+    "rootDir": "../",
+    "rootDirs": ["./", "../shared/src"],
+    "outDir": "dist",
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "strict": false,
+    "skipLibCheck": true,
+    "types": ["node", "vitest/globals"],
+    "baseUrl": "./",
+    "paths": {
+      "@statlab/shared": ["../shared/src"]
+    }
+  },
+  "include": ["src", "analysis", "tests", "../shared/src", "src/types.d.ts"],
+  "exclude": ["node_modules", "dist"]
+}

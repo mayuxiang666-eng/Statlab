@@ -1,0 +1,57 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:../db/statlab.sqlite"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Dataset {
+  id               Int               @id @default(autoincrement())
+  name             String
+  originalFilename String
+  createdAt        DateTime          @default(now())
+  versions         DatasetVersion[]
+  runs             RunRecord[]
+}
+
+model DatasetVersion {
+  id         Int       @id @default(autoincrement())
+  datasetId  Int
+  version    Int
+  createdAt  DateTime  @default(now())
+  path       String
+  summary    String
+  dataset    Dataset   @relation(fields: [datasetId], references: [id])
+  runs       RunRecord[]
+}
+
+model RunRecord {
+  id               Int       @id @default(autoincrement())
+  datasetId        Int?
+  datasetVersionId Int?
+  algorithmId      String
+  variables        String
+  params           String
+  status           String   @default("pending")
+  createdAt        DateTime @default(now())
+  result           String?
+  log              String?
+  analysisName     String?
+  analystName      String?
+  dataset          Dataset? @relation(fields: [datasetId], references: [id])
+  datasetVersion   DatasetVersion? @relation(fields: [datasetVersionId], references: [id])
+}
+
+model SavedConnection {
+  id        String   @id @default(uuid())
+  name      String
+  type      String   // mssql, postgres
+  host      String
+  port      Int
+  database  String
+  user      String
+  password  String   // Encrypted
+  createdAt DateTime @default(now())
+}
