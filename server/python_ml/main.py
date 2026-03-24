@@ -19,6 +19,8 @@ from pydantic import BaseModel
 from typing import Any
 import traceback
 
+from utils import execute_python_code, build_python_env_status
+
 app = FastAPI(title="StatLab Python ML Service", version="1.0.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
@@ -32,7 +34,11 @@ class MLRequest(BaseModel):
 
 @app.get("/health")
 def health():
-    return {"ok": True, "service": "StatLab Python ML"}
+    return {
+        "ok": True,
+        "service": "StatLab Python ML",
+        "env": build_python_env_status(),
+    }
 
 
 @app.post("/run")
@@ -40,7 +46,7 @@ def run_algorithm(req: MLRequest):
     algo = req.algorithm
     print(f"[Python ML] Received task: {algo} with {len(req.dataset)} samples")
     payload = {"dataset": req.dataset, "variables": req.variables, "params": req.params}
-    
+
     try:
         if algo == "ml.randomForestReg":
             from algorithms.rf_regression import run
@@ -66,7 +72,7 @@ def run_algorithm(req: MLRequest):
             from algorithms.time_series import run
         else:
             raise HTTPException(status_code=404, detail=f"Algorithm '{algo}' not available in Python ML service")
-        
+
         result = run(payload)
         return result
 
@@ -74,21 +80,21 @@ def run_algorithm(req: MLRequest):
         raise
     except Exception as e:
         tb = traceback.format_exc()
-        # Note: 'algo' is defined in the outer scope of the function
         print(f"[Python ML Error]: {e}\n{tb}")
         raise HTTPException(status_code=500, detail=f"ML Error: {str(e)}")
+
 
 @app.post("/run-code")
 def run_custom_code(req: dict):
     code = req.get("code", "")
     dataset = req.get("dataset", [])
     tests = req.get("tests", [])
-    from utils import execute_python_code
-    return execute_python_code(code, dataset, tests)
-
+    step_tests = req.get("stepTests", [])
+    return execute_python_code(code, dataset, tests, step_tests)
 
 
 if __name__ == "__main__":
     import uvicorn
+
     print("[Python ML] StatLab Python ML Service starting on port 3002...")
     uvicorn.run("main:app", host="0.0.0.0", port=3002, log_level="warning", reload=True)

@@ -194,7 +194,8 @@ app.get("/api/datasets", authMiddleware, async (req: AuthRequest, res) => {
       name: d.name,
       originalFilename: d.originalFilename,
       createdAt: d.createdAt.toISOString(),
-      versions: d.versions.map((v) => versionToMeta(v))
+      versions: d.versions.map((v) => versionToMeta(v)),
+      canDelete: d.userId === req.userId || d.userId === null
     }));
     res.json(mapped);
   } catch (err) {
@@ -284,9 +285,14 @@ app.post("/api/datasets/upload", authMiddleware, upload.single("file"), async (r
 app.delete("/api/datasets/:datasetId", authMiddleware, async (req: AuthRequest, res) => {
   const datasetId = Number(req.params.datasetId);
   try {
-    // Verify ownership first
-    const dataset = await prisma.dataset.findFirst({ where: { id: datasetId, userId: req.userId } });
-    if (!dataset) return res.status(403).json({ error: "Access denied" });
+    // Allow deleting current-user datasets and seeded shared datasets.
+    const dataset = await prisma.dataset.findFirst({
+      where: {
+        id: datasetId,
+        OR: [{ userId: req.userId }, { userId: null }]
+      }
+    });
+    if (!dataset) return res.status(403).json({ error: "Access denied: dataset is not owned by current user" });
 
     await prisma.runRecord.deleteMany({ where: { datasetId } });
     await prisma.datasetVersion.deleteMany({ where: { datasetId } });
@@ -1084,11 +1090,9 @@ async function seedSampleDatasets() {
 
 async function seedAdminUser() {
   try {
-    const admin = await prisma.user.findFirst({
-      where: { username: "admin" }
-    });
-    if (!admin) {
-      const hashedPassword = await bcrypt.hash("123456", 10);
+    const hashedPassword = await bcrypt.hash("123456", 10);
+    const existing = await prisma.user.findFirst({ where: { username: "admin" } });
+    if (!existing) {
       await prisma.user.create({
         data: {
           username: "admin",
@@ -1097,7 +1101,14 @@ async function seedAdminUser() {
         }
       });
       console.log("Seeded admin user (admin / 123456)");
+      return;
     }
+
+    await prisma.user.update({
+      where: { id: existing.id },
+      data: { password: hashedPassword, name: existing.name || "Administrator" }
+    });
+    console.log("Admin user password refreshed (admin / 123456)");
   } catch (err) {
     console.warn("Seed admin user failed:", err);
   }

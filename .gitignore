@@ -13,3 +13,5 @@ coverage
 deploy_bundle
 server/release
 server/.env.production
+__pycache__/
+*.pyc

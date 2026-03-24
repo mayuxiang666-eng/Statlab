@@ -1,26 +1,27 @@
 {
-  "name": "statlab-monorepo",
-  "private": true,
-  "version": "0.1.0",
-  "workspaces": [
-    "client",
-    "server",
-    "shared"
-  ],
-  "scripts": {
-    "dev": "npm-run-all -p server:dev client:dev python:dev",
-    "server:dev": "npm --workspace server run dev",
-    "client:dev": "npm --workspace client run dev",
-    "python:dev": "C:\\Users\\uif35346\\AppData\\Local\\Programs\\Python\\Python312\\python.exe server/python_ml/main.py",
-    "python:install": "C:\\Users\\uif35346\\AppData\\Local\\Programs\\Python\\Python312\\python.exe -m pip install -r server/python_ml/requirements.txt",
-    "setup": "npm install && npm run python:install",
-    "lint": "npm-run-all --continue-on-error server:lint client:lint",
-    "test": "npm --workspace server run test",
-    "format": "npm-run-all server:format client:format",
-    "package:iis": "powershell -ExecutionPolicy Bypass -File scripts/package-for-iis.ps1",
-    "package:iis:zip": "powershell -ExecutionPolicy Bypass -File scripts/package-for-iis.ps1; powershell -Command \"if (Test-Path deploy_bundle.zip) { Remove-Item deploy_bundle.zip -Force }; Compress-Archive -Path deploy_bundle\\* -DestinationPath deploy_bundle.zip\""
-  },
-  "devDependencies": {
-    "npm-run-all": "^4.1.5"
-  }
+    "name":  "statlab-monorepo",
+    "private":  true,
+    "version":  "0.1.0",
+    "workspaces":  [
+                       "client",
+                       "server",
+                       "shared"
+                   ],
+    "scripts":  {
+                    "dev":  "npm-run-all -p server:dev client:dev python:dev",
+                    "server:dev":  "npm --workspace server run dev",
+                    "client:dev":  "npm --workspace client run dev",
+                    "python:dev":  "C:\\Users\\uif35346\\AppData\\Local\\Programs\\Python\\Python312\\python.exe server/python_ml/main.py",
+                    "python:install":  "C:\\Users\\uif35346\\AppData\\Local\\Programs\\Python\\Python312\\python.exe -m pip install -r server/python_ml/requirements.txt",
+                    "setup":  "npm install \u0026\u0026 npm run python:install",
+                    "lint":  "npm-run-all --continue-on-error server:lint client:lint",
+                    "test":  "npm --workspace server run test",
+                    "format":  "npm-run-all server:format client:format",
+                    "package:iis":  "powershell -ExecutionPolicy Bypass -File scripts/package-for-iis.ps1",
+                    "package:iis:zip":  "powershell -ExecutionPolicy Bypass -File scripts/package-for-iis.ps1; powershell -Command \"if (Test-Path deploy_bundle.zip) { Remove-Item deploy_bundle.zip -Force }; Compress-Archive -Path deploy_bundle\\* -DestinationPath deploy_bundle.zip\"",
+                    "validate:courses":  "node scripts/validate-courses.js"
+                },
+    "devDependencies":  {
+                            "npm-run-all":  "^4.1.5"
+                        }
 }

@@ -123,6 +123,7 @@ export default function App() {
   const [algorithms, setAlgorithms] = useState<AlgorithmSpec[]>([]);
   const [selectedAlgo, setSelectedAlgo] = useState<AlgorithmSpec | null>(null);
   const [datasets, setDatasets] = useState<DatasetLike[]>([]);
+  const [selectedDatasetIds, setSelectedDatasetIds] = useState<Set<DatasetId>>(new Set());
   const [activeDatasetId, setActiveDatasetId] = useState<DatasetId | null>(null);
   const [activeVersion, setActiveVersion] = useState<VersionLike | null>(null);
   const [assignments, setAssignments] = useState<Record<string, string[]>>({});
@@ -238,7 +239,12 @@ export default function App() {
       const { data } = await axios.get<DatasetInfo[]>("/api/datasets");
       setDatasets((prev) => {
         const dbOnes = prev.filter((d: any) => typeof d.id === "string");
-        return [...data, ...dbOnes];
+        const merged = [...data, ...dbOnes];
+        setSelectedDatasetIds((oldSel) => {
+          const valid = new Set(merged.map((d) => d.id));
+          return new Set(Array.from(oldSel).filter((id) => valid.has(id)));
+        });
+        return merged;
       });
       if (!activeVersion && data[0]?.versions?.[0]) {
         setActiveDatasetId(data[0].id); setActiveVersion(data[0].versions[0] as DatasetVersionMeta);
@@ -548,9 +554,15 @@ export default function App() {
     return () => window.removeEventListener("resize", onResize);
   }, [activeVersion, syncPreviewScrollMeta]);
 
+  const canDeleteDataset = (d: DatasetLike) => {
+    if (typeof d.id !== "number") return false;
+    return (d as DatasetInfo).canDelete !== false;
+  };
+
   const deleteDataset = async (id: DatasetId, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (typeof id !== "number") { addLog("warn", "该数据集来自数据库缓存，暂不支持删除"); return; }
+    const target = datasets.find((d) => d.id === id);
+    if (!target || !canDeleteDataset(target)) { addLog("warn", "该数据集暂无删除权限"); return; }
     if (!confirm("确定要删除这个数据集吗？所有历史版本都会被清除。")) return;
     try {
       addLog("info", "删除数据集...");
@@ -565,12 +577,78 @@ export default function App() {
         }
         return next;
       });
+      setSelectedDatasetIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
       addLog("success", "删除成功");
     } catch (err: any) {
       addLog("error", err?.response?.data?.error || "删除失败");
     }
   };
 
+
+  const toggleDatasetSelection = (id: DatasetId, e: React.SyntheticEvent) => {
+    e.stopPropagation();
+    setSelectedDatasetIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const selectAllDeletableDatasets = () => {
+    const deletable = datasets.filter((d) => canDeleteDataset(d)).map((d) => d.id as DatasetId);
+    setSelectedDatasetIds((prev) => {
+      const allSelected = deletable.length > 0 && deletable.every((id) => prev.has(id));
+      return allSelected ? new Set() : new Set(deletable);
+    });
+  };
+
+  const batchDeleteDatasets = async () => {
+    const selected = Array.from(selectedDatasetIds);
+    if (!selected.length) {
+      addLog('warn', 'No dataset selected for batch delete');
+      return;
+    }
+
+    const selectedDatasets = selected.map((id) => datasets.find((d) => d.id === id)).filter(Boolean) as DatasetLike[];
+    const deletable = selectedDatasets.filter((d) => canDeleteDataset(d)).map((d) => d.id as number);
+    const nonDeletableCount = selected.length - deletable.length;
+    if (!deletable.length) {
+      addLog('warn', 'Selected datasets are database-cached and cannot be deleted here');
+      return;
+    }
+
+    if (!confirm(`Delete ${deletable.length} selected dataset(s)? This will remove all versions.`)) return;
+
+    addLog('info', `Batch deleting datasets (${deletable.length})...`);
+    let ok = 0;
+    for (const id of deletable) {
+      try {
+        await axios.delete(`/api/datasets/${id}`);
+        ok += 1;
+      } catch (err: any) {
+        addLog('warn', `Failed to delete dataset ${id}: ${err?.response?.data?.error || err?.message || 'unknown error'}`);
+      }
+    }
+
+    await refreshDatasets();
+    setSelectedDatasetIds(new Set());
+
+    if (activeDatasetId && typeof activeDatasetId === 'number' && deletable.includes(activeDatasetId)) {
+      const next = datasets.filter((d) => typeof d.id === 'number' && !deletable.includes(d.id as number));
+      setActiveDatasetId(next[0]?.id || null);
+      setActiveVersion(next[0]?.versions?.[0] || null);
+      setAssignments({});
+      setResult(null);
+    }
+
+    const skipMsg = nonDeletableCount > 0 ? `, skipped ${nonDeletableCount} non-deletable dataset(s)` : '';
+    addLog('success', `Batch delete completed: ${ok}/${deletable.length}${skipMsg}`);
+  };
   const loadFullData = async () => {
     if (!activeVersion || loadingFullData) return;
     setLoadingFullData(true);
@@ -699,16 +777,32 @@ export default function App() {
             {datasets.length > 0 && <>
               <div className="sidebar-section-title" style={{ marginTop: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span>{t(lang, "sidebar", "myData")}</span>
-                <button className="btn-icon-only" title={t(lang, "sidebar", "uploadData")} onClick={() => setShowUploadModal(true)} style={{ opacity: 0.6 }}>
-                  <Plus size={14} />
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <button className="btn-icon-only" title="Select or clear all deletable datasets" onClick={selectAllDeletableDatasets} style={{ opacity: 0.75 }}>
+                    <Table size={14} />
+                  </button>
+                  <button className="btn-icon-only" title="Batch delete selected datasets" onClick={batchDeleteDatasets} style={{ opacity: selectedDatasetIds.size ? 0.9 : 0.45 }}>
+                    <Trash2 size={14} />
+                  </button>
+                  <button className="btn-icon-only" title={t(lang, "sidebar", "uploadData")} onClick={() => setShowUploadModal(true)} style={{ opacity: 0.6 }}>
+                    <Plus size={14} />
+                  </button>
+                </div>
               </div>
               <div style={{ maxHeight: "calc(100vh - 300px)", overflowY: "auto", paddingRight: 4, marginTop: 4 }}>
                 {datasets.map((d) => (
                   <div key={d.id} className={`sidebar-item ${activeDatasetId === d.id ? "active" : ""}`}
-                    style={{ padding: '8px 12px', margin: '2px 8px', fontSize: 13 }}
+                    style={{ padding: '8px 12px', margin: '2px 8px', fontSize: 13, gap: 8 }}
                     title={d.name}
                     onClick={() => { setActiveDatasetId(d.id); if (d.versions?.[0]) setActiveVersion(d.versions[0] as any); setPage("data"); }}>
+                    <input
+                      type="checkbox"
+                      checked={selectedDatasetIds.has(d.id)}
+                      disabled={!canDeleteDataset(d)}
+                      onClick={(e) => toggleDatasetSelection(d.id, e)}
+                      onChange={() => {}}
+                      title={!canDeleteDataset(d) ? 'This dataset cannot be deleted by current user' : 'Select for batch delete'}
+                    />
                     <span style={{ fontSize: 14, opacity: 0.7 }}>{(d as any).sourceType === 'db' ? '🗄️' : '📄'}</span>
                     <span className="truncate" style={{ flex: 1 }}>{d.name}</span>
                     {activeDatasetId === d.id && <div className="active-indicator" />}
@@ -3341,4 +3435,3 @@ function ReportPage({ runHistory, datasets, algorithms, onLoadResult, onDeleteRe
     </div>
   );
 }
-

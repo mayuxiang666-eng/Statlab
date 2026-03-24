@@ -56,6 +56,7 @@
 - 右栏：Web Coding填空编辑器 
 - 支持库：Pandas、NumPy、Scikit-learn、Matplotlib、Joblib
 - 自动保存：每3秒保存，刷新不丢失
+- 保证字体较大，和juoternotebook风格一样，拒绝简陋codeblock，看起来专业，不像是黑客马拉松作品
 
 ### 4.1.2 运行能力
 - 逐行运行、整片运行

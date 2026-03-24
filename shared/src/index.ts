@@ -24,6 +24,7 @@ export type DatasetInfo = {
   originalFilename: string;
   createdAt: string;
   versions: DatasetVersionMeta[];
+  canDelete?: boolean;
 };
 
 export type InputSlotSpec = {
