@@ -1,0 +1,53 @@
+﻿node.exe : 
+node:internal/modules/cjs/loader:1459
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" 
+"C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecifie 
+   d: (node:internal/modules/cjs/loader:  
+  1459:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeComma 
+   ndError
+ 
+  throw err;
+  ^
+
+Error: Cannot find module 
+'./debug_datasets_content.ts'
+Require stack:
+- D:\statlab\deploy_bundle\client\scripts\
+imaginaryUncacheableRequireResolveScript
+    at Module._resolveFilename 
+(node:internal/modules/cjs/loader:1456:15)
+    at require.resolve 
+(node:internal/modules/helpers:163:19)
+    at requireResolveNonCached (D:\statlab
+\deploy_bundle\node_modules\ts-node\dist\b
+in.js:549:16)
+    at getProjectSearchDir (D:\statlab\dep
+loy_bundle\node_modules\ts-node\dist\bin.j
+s:519:40)
+    at phase3 (D:\statlab\deploy_bundle\no
+de_modules\ts-node\dist\bin.js:267:27)
+    at bootstrap (D:\statlab\deploy_bundle
+\node_modules\ts-node\dist\bin.js:47:30)
+    at main (D:\statlab\deploy_bundle\node
+_modules\ts-node\dist\bin.js:33:12)
+    at Object.<anonymous> (D:\statlab\depl
+oy_bundle\node_modules\ts-node\dist\bin.js
+:579:5)
+    at Module._compile 
+(node:internal/modules/cjs/loader:1812:14)
+    at Object..js (node:internal/modules/c
+js/loader:1943:10) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'D:\\statlab\\deploy_bundle\\client\\s
+cripts\\imaginaryUncacheableRequireResolve
+Script'
+  ]
+}
+
+Node.js v24.14.0

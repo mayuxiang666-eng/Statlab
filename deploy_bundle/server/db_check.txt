@@ -1,0 +1,11 @@
+﻿Datasets in DB:
+1: name='σ╣┐σæèµèòµö╛Σ╕ÄΘöÇσö«Θó¥', originalFilename='Advertising.csv'
+2: name='µê┐Σ╗╖σ╜▒σôìσ¢áτ┤áσêåµ₧É', originalFilename='Housing.csv'
+3: name='σæÿσ╖Ñτ╗⌐µòêΣ╕ÄσÄïσè¢σêåµ₧É', originalFilename='Employee.csv'
+4: name='Θ╕óσ░╛Φè▒σôüτºìσêåτ▒╗', originalFilename='Iris.csv'
+5: name='ΘçæΦ₧ìΦéíτÑ¿Σ╗╖µá╝', originalFilename='finance_stock_prices.csv'
+6: name='σî╗τûùµéúΦÇàΦ«░σ╜ò', originalFilename='medical_patient_records.csv'
+7: name='σ╗║τ¡æΦâ╜ΦÇù', originalFilename='energy_consumption.csv'
+8: name='σê╢ΘÇáΦ┤¿ΘçÅµÄºσê╢', originalFilename='manufacturing_quality.csv'
+9: name='µê┐Σ╗╖σ╜▒σôìσ¢áτ┤áσêåµ₧É', originalFilename='housing.csv'
+10: name='µê┐Σ╗╖σ╜▒σôìσ¢áτ┤áσêåµ₧É', originalFilename='housing.csv'

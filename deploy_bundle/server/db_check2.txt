@@ -1,0 +1,11 @@
+﻿Datasets in DB:
+  id=1 name='σ╣┐σæèµèòµö╛Σ╕ÄΘöÇσö«Θó¥' origFile='Advertising.csv' userId=null | version.id=1 path=D:\statlab\deploy_bundle\samples\Advertising.csv EXISTS=true
+  id=2 name='µê┐Σ╗╖σ╜▒σôìσ¢áτ┤áσêåµ₧É' origFile='Housing.csv' userId=null | version.id=2 path=D:\statlab\deploy_bundle\samples\Housing.csv EXISTS=true
+  id=3 name='σæÿσ╖Ñτ╗⌐µòêΣ╕ÄσÄïσè¢σêåµ₧É' origFile='Employee.csv' userId=null | version.id=3 path=D:\statlab\deploy_bundle\samples\Employee.csv EXISTS=true
+  id=4 name='Θ╕óσ░╛Φè▒σôüτºìσêåτ▒╗' origFile='Iris.csv' userId=null | version.id=4 path=D:\statlab\deploy_bundle\samples\Iris.csv EXISTS=true
+  id=5 name='ΘçæΦ₧ìΦéíτÑ¿Σ╗╖µá╝' origFile='finance_stock_prices.csv' userId=null | version.id=5 path=D:\statlab\deploy_bundle\samples\pro\finance_stock_prices.csv EXISTS=true
+  id=6 name='σî╗τûùµéúΦÇàΦ«░σ╜ò' origFile='medical_patient_records.csv' userId=null | version.id=6 path=D:\statlab\deploy_bundle\samples\pro\medical_patient_records.csv EXISTS=true
+  id=7 name='σ╗║τ¡æΦâ╜ΦÇù' origFile='energy_consumption.csv' userId=null | version.id=7 path=D:\statlab\deploy_bundle\samples\pro\energy_consumption.csv EXISTS=true
+  id=8 name='σê╢ΘÇáΦ┤¿ΘçÅµÄºσê╢' origFile='manufacturing_quality.csv' userId=null | version.id=8 path=D:\statlab\deploy_bundle\samples\pro\manufacturing_quality.csv EXISTS=true
+  id=9 name='µê┐Σ╗╖σ╜▒σôìσ¢áτ┤áσêåµ₧É' origFile='housing.csv' userId=7e88e1ab-9ebd-4010-a640-6d37ae4c58b7 | version.id=9 path=D:\statlab\deploy_bundle\samples\Housing.csv EXISTS=true
+  id=10 name='µê┐Σ╗╖σ╜▒σôìσ¢áτ┤áσêåµ₧É' origFile='housing.csv' userId=e6d5c41a-c957-4cd9-854c-a55356205337 | version.id=10 path=D:\statlab\deploy_bundle\samples\Housing.csv EXISTS=true

@@ -1,0 +1,8 @@
+﻿Loading dataset from: D:\statlab\deploy_bundle\samples\Housing.csv
+Passed dataset rows: 225
+Calling Python ML...
+Python output logs:
+[
+  'OK: dataset loaded: 225 rows, 4 cols',
+  'SUCCESS: Read CSV inside Python ML. shape: (50, 4)'
+]

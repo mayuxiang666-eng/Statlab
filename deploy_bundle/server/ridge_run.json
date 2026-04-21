@@ -1,0 +1,12 @@
+{
+  "id": 13,
+  "datasetId": 4,
+  "datasetVersionId": 4,
+  "algorithmId": "ml.ridge",
+  "variables": "{\"target\":[\"Price\"],\"features\":[\"Rooms\",\"DistanceToCenter\",\"PupilTeacherRatio\"]}",
+  "params": "{\"focusVar\":\"Price\"}",
+  "status": "completed",
+  "createdAt": "2026-02-28T08:26:31.177Z",
+  "result": "{\"tables\":[{\"title\":\"回归指标\",\"columns\":[\"RMSE\",\"MAE\",\"R²\"],\"rows\":[[25.581,24.49,-168.865]]},{\"title\":\"系数\",\"columns\":[\"特征\",\"权重\"],\"rows\":[[\"Rooms\",8.451],[\"DistanceToCenter\",-0.515],[\"PupilTeacherRatio\",-1.197]]}],\"figures\":[],\"assumptions\":[\"线性关系、噪声服从零均值\"],\"warnings\":[],\"narrative\":\"R²=-168.865，RMSE=25.581；正则项可缓解多重共线性。\",\"citation\":\"Hoerl & Kennard (1970).\"}",
+  "log": null
+}

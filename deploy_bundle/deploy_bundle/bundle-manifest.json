@@ -1,0 +1,9 @@
+﻿{
+    "backend_exe":  "server\\\\release\\\\statlab-server.exe",
+    "frontend":  "client\\\\dist",
+    "bundle_root":  "C:\\Users\\uif35346\\OneDrive - Continental AG\\Desktop\\Statlab (2)\\Statlab\\data platform\\deploy_bundle",
+    "created_at":  "2026-03-18T14:41:15",
+    "env_template":  "server\\\\.env.production.example",
+    "python_ml":  "server\\\\python_ml",
+    "sqlite_db":  "server\\\\db\\\\statlab.sqlite"
+}

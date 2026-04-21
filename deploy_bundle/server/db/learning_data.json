@@ -1,0 +1,22 @@
+{
+  "LearningProgress": [],
+  "LabExerciseRecord": [],
+  "WrongQuestion": [],
+  "ChallengeAttempt": [],
+  "User": [
+    {
+      "id": "2a3cdc23-9861-4d74-94b2-f4c71ff8b14e",
+      "username": "Allen",
+      "password": "$2b$10$WmcJHCwXBZi9phKq9vBMB.zSLefF1TUsPfIeSzZC364QIyZfU8q.e",
+      "name": "allen",
+      "createdAt": 1773974527343
+    },
+    {
+      "id": "3a865b0e-d2a2-4bd4-b34a-aeae13c0189a",
+      "username": "admin",
+      "password": "$2b$10$sy4OKZM7muETasxo5RjnSe/rZUz5ANRj9OczTSincM7m4RYXQoD82",
+      "name": "Administrator",
+      "createdAt": 1773974734756
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+﻿Loading dataset from: D:\statlab\deploy_bundle\samples\Housing.csv
+Passed dataset rows: 225
+Calling Python ML...
+node.exe : Test failed ERROR MESSAGE: 
+Python ML service error: connect 
+ECONNREFUSED 127.0.0.1:3002
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" 
+"C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecifie 
+   d: (Test failed ERR... 127.0.0.1:3002  
+  :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeComma 
+   ndError
+ 
+Test failed ERROR STACK: Error: Python ML 
+service error: connect ECONNREFUSED 
+127.0.0.1:3002
+    at runCustomPythonCode (D:\statlab\dep
+loy_bundle\server\analysis\pythonBridge.ts
+:63:11)
+    at processTicksAndRejections 
+(node:internal/process/task_queues:104:5)
+    at async test (D:\statlab\deploy_bundl
+e\server\scripts\test_python_lab.ts:53:20)

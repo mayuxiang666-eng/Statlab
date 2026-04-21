@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoML Leaderboard Mockup</title>
+    <style>
+        :root {
+            --bg: #f8fafc;
+            --card-bg: rgba(255, 255, 255, 0.9);
+            --text-main: #1e293b;
+            --text-sub: #64748b;
+            --accent: #ff9a00;
+            --success: #10b981;
+        }
+        body {
+            background: var(--bg);
+            color: var(--text-main);
+            font-family: 'Inter', system-ui, sans-serif;
+            margin: 0;
+            padding: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .leaderboard {
+            width: 800px;
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.05);
+            border: 1px solid rgba(0,0,0,0.05);
+            overflow: hidden;
+            display: flex;
+        }
+        .main-panel {
+            flex: 1;
+            padding: 30px;
+        }
+        .side-panel {
+            width: 240px;
+            background: rgba(241, 245, 249, 0.5);
+            border-left: 1px solid rgba(0,0,0,0.05);
+            padding: 30px;
+        }
+        h2 { margin: 0 0 20px 0; font-size: 20px; font-weight: 700; }
+        
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; color: var(--text-sub); font-size: 11px; text-transform: uppercase; padding: 12px 10px; border-bottom: 2px solid #f1f5f9; }
+        td { padding: 16px 10px; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
+        
+        .rank { font-weight: 700; color: var(--accent); }
+        .model-name { font-weight: 600; display: flex; align-items: center; gap: 8px; }
+        .tag { font-size: 10px; background: #e2e8f0; padding: 2px 6px; border-radius: 4px; color: var(--text-sub); font-weight: 500; }
+        
+        .metric { font-family: 'JetBrains Mono', monospace; font-weight: 500; color: var(--success); }
+        .time { color: var(--text-sub); font-size: 12px; }
+        
+        .sidebar-chart {
+            height: 120px;
+            background: #fff;
+            border: 1px dashed #ced4da;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #adb5bd;
+            font-size: 12px;
+        }
+        .btn-deploy {
+            background: var(--text-main);
+            color: #fff;
+            border: none;
+            padding: 10px 0;
+            width: 100%;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+    </style>
+</head>
+<body>
+    <div class="leaderboard">
+        <div class="main-panel">
+            <h2>AutoML 训练排行榜</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>排名</th>
+                        <th>主模型</th>
+                        <th>准确率 (ACC)</th>
+                        <th>训练耗时</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="rank">#1</td>
+                        <td>
+                            <div class="model-name">LightGBM <span class="tag">GBM</span></div>
+                        </td>
+                        <td class="metric">0.9421</td>
+                        <td class="time">12.4s</td>
+                    </tr>
+                    <tr>
+                        <td class="rank">#2</td>
+                        <td>
+                            <div class="model-name">XGBoost <span class="tag">DMatrix</span></div>
+                        </td>
+                        <td class="metric">0.9388</td>
+                        <td class="time">15.1s</td>
+                    </tr>
+                    <tr>
+                        <td class="rank">#3</td>
+                        <td>
+                            <div class="model-name">RandomForest <span class="tag">Ensemble</span></div>
+                        </td>
+                        <td class="metric">0.9102</td>
+                        <td class="time">8.2s</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="side-panel">
+            <h2>指标分析</h2>
+            <div class="sidebar-chart">
+                <!-- ROC Curve Placeholder -->
+                [ ROC 曲线汇总对比 ]
+            </div>
+            <p style="font-size: 11px; color: var(--text-sub); line-height: 1.5;">
+                推荐模型: <b>LightGBM</b><br>
+                指标优于平均值 12.5%，适合当前高维度稀疏特征。
+            </p>
+            <button class="btn-deploy">一键部署最优模型</button>
+        </div>
+    </div>
+</body>
+</html>

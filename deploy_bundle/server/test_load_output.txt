@@ -1,0 +1,8 @@
+﻿Parsed 225 rows.
+Keys of first row: [ 'Rooms', 'DistanceToCenter', 'PupilTeacherRatio', 'Price' ]
+First row: {
+  Rooms: '6.575',
+  DistanceToCenter: '4.09',
+  PupilTeacherRatio: '15.3',
+  Price: '24.0'
+}

@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StatLab Skill Tree Mockup</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --node-bg: #1e293b;
+            --node-border: #334155;
+            --accent: #ff9a00;
+            --accent-glow: rgba(255, 154, 0, 0.4);
+            --text: #f8fafc;
+        }
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', system-ui, sans-serif;
+            margin: 0;
+            padding: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        .skill-tree {
+            position: relative;
+            width: 800px;
+            height: 600px;
+        }
+        .node {
+            position: absolute;
+            width: 120px;
+            height: 120px;
+            background: var(--node-bg);
+            border: 2px solid var(--node-border);
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 10px;
+            transition: all 0.3s;
+            cursor: pointer;
+            z-index: 2;
+        }
+        .node.completed {
+            border-color: var(--accent);
+            box-shadow: 0 0 20px var(--accent-glow);
+        }
+        .node.active {
+            border-color: #3b82f6;
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
+        }
+        .node span {
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+        .node .icon {
+            font-size: 24px;
+        }
+        .connection {
+            position: absolute;
+            background: var(--node-border);
+            z-index: 1;
+        }
+        .connection.active {
+            background: var(--accent);
+            box-shadow: 0 0 10px var(--accent);
+        }
+        /* Layout */
+        #n1 { top: 240px; left: 40px; }
+        #n2 { top: 120px; left: 240px; }
+        #n3 { top: 360px; left: 240px; }
+        #n4 { top: 240px; left: 440px; }
+        #n5 { top: 120px; left: 640px; }
+        
+        .c1 { top: 300px; left: 160px; width: 80px; height: 2px; transform: rotate(-33deg); transform-origin: left; }
+        .c2 { top: 300px; left: 160px; width: 80px; height: 2px; transform: rotate(33deg); transform-origin: left; }
+        .c3 { top: 180px; left: 360px; width: 80px; height: 2px; transform: rotate(33deg); transform-origin: left; }
+        .c4 { top: 420px; left: 360px; width: 80px; height: 2px; transform: rotate(-33deg); transform-origin: left; }
+        .c5 { top: 300px; left: 560px; width: 80px; height: 2px; transform: rotate(-33deg); transform-origin: left; }
+
+        .header {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+        }
+        .header h1 {
+            color: var(--accent);
+            margin: 0;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+        .badge {
+            position: absolute;
+            bottom: 40px;
+            right: 40px;
+            background: rgba(255,154,0,0.1);
+            border: 1px solid var(--accent);
+            padding: 10px 20px;
+            border-radius: 4px;
+            font-size: 14px;
+            color: var(--accent);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>STATLAB SKILL TREE</h1>
+        <p>数据师成长路径 - 2026版</p>
+    </div>
+
+    <div class="skill-tree">
+        <!-- Lines -->
+        <div class="connection c1 active"></div>
+        <div class="connection c2 active"></div>
+        <div class="connection c3"></div>
+        <div class="connection c4"></div>
+        <div class="connection c5"></div>
+
+        <!-- Nodes -->
+        <div class="node completed" id="n1">
+            <div class="icon">📊</div>
+            <span>基础统计学</span>
+        </div>
+        <div class="node completed" id="n2">
+            <div class="icon">🧹</div>
+            <span>数据清洗</span>
+        </div>
+        <div class="node active" id="n3">
+            <div class="icon">📈</div>
+            <span>回归分析</span>
+        </div>
+        <div class="node" id="n4">
+            <div class="icon">🧠</div>
+            <span>随机森林</span>
+        </div>
+        <div class="node" id="n5">
+            <div class="icon">🛰️</div>
+            <span>深度学习</span>
+        </div>
+    </div>
+
+    <div class="badge">
+        等级: 高级学徒 | 经验值: 1250/2000
+    </div>
+</body>
+</html>

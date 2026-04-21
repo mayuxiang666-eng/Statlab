@@ -1,0 +1,686 @@
+[
+  {
+    "id": "pbi_intro",
+    "stage": 1,
+    "titleZh": "Power BI 核心组件与 UI 导航",
+    "titleEn": "Core Components & UI Navigation",
+    "objectiveZh": "全方位掌握 Power BI 三大核心组件分工，深入理解 4 大视图与常用功能区。",
+    "objectiveEn": "Master the role of 3 core components and understand the 4 main views & UI areas.",
+    "duration": "15 min",
+    "points": 100,
+    "contentZh": "\n# Power BI 全景指南：从桌面到云端\n\nPower BI 不仅仅是一个绘图工具，它是一个由多个组件组成的**企业级生态系统**。它将杂乱无章的数据转化为连贯的、极具视觉沉浸感且可交互的洞察。\n\n---\n\n## 1. 核心铁三角 (The Core Trio)\n\n### Power BI Desktop (开发中心)\n* **定位**：免费的 Windows 桌面应用程序，是分析师和报表开发者的主战场。\n* **核心引擎**：\n    * **Power Query (M 语言)**：负责数据的提取、转换和加载 (ETL)。\n    * **VertiPaq 引擎**：负责在内存中极速压缩和处理柱状数据。\n* **功能**：连接到数百个数据源、清洗数据、建立关系模型、编写 DAX 度量值以及设计交互式报表。\n* **输出**：生成包含数据、模型和视图的 `.pbix` 文件。\n* **💡 场景示例**：\n    > 你需要分析公司的销售业绩。在 Desktop 中，你连接了公司的 SQL Server 数据库（获取历史订单）和一个本地的 Excel 文件（获取明年的销售目标）。你使用 Power Query 清理了 Excel 中的空行，在模型视图中将两者通过“日期”和“产品 ID”关联起来，并最终制作了一个包含柱状图和切片器的交互式报表。\n\n### Power BI Service (发布与中心化管理)\n* **定位**：基于 Azure 云的 SaaS（软件即服务）平台，是团队协作和报表分发的核心。\n* **功能**：\n    * **仪表板 (Dashboard)**：将多个不同报表中的核心图表（Tile）固定在一个页面上，提供全局概览。\n    * **网关 (On-premises data gateway)**：打通云端与本地数据库，实现数据的定时或实时自动刷新。\n    * **行级安全性 (RLS)**：控制不同用户能看到的数据权限。\n* **协作**：通过工作区 (Workspaces) 进行团队共同开发，通过应用 (Apps) 向全公司大范围发布只读内容。\n* **💡 场景示例**：\n    > 报表开发完成后，你将其发布到 Service。为了保证数据安全，你设置了 **RLS (行级安全性)**：华东区的销售经理登录账号时，报表会自动过滤，他只能看到华东区的数据，而全国总监登录时则能看到全盘数据。最后，你设置了每天早上 8:00 自动刷新数据。\n\n### Power BI Mobile (移动决策)\n* **定位**：iOS 和 Android 端的原生应用程序。\n* **价值**：让高管和业务人员随时随地监控业务健康状况。\n* **特色功能**：支持触控交互、扫描二维码直接过滤报表中的物理设备数据、接收数据驱动的警报。\n* **💡 场景示例**：\n    > 你在 Service 中设置了一个**数据警报 (Data Alert)**。当“今日库存周转率”跌破 15% 时，Power BI Mobile 会立刻在你的手机上弹出推送通知，让你在出差途中也能及时介入处理异常。\n\n---\n\n## 2. Desktop 界面深度导航\n\n### 四大核心视图\n\n#### 1. 报表视图 (Report View)\n* **描述**：这是你的数字画布，支持多页设计（类似于 PPT 或 Excel 的 Sheet）。\n* **交互机制**：报表视图中最强大的特性是**交叉筛选 (Cross-filtering)**。\n* **💡 示例**：\n    > 页面上有一个“各省份销售额”的地图，和一个“各产品利润”的柱状图。当你点击地图上的“广东省”时，柱状图会自动做出反应，只高亮显示广东省对应的产品利润。这种联动无需编写任何代码。\n\n#### 2. 数据视图 (Data View)\n* **描述**：以表格形式查看加载到内存中的明细数据。\n* **主要操作**：在这里你可以检查数据类型（确保“日期”列被正确识别为日期格式而非文本），以及创建**计算列 (Calculated Column)**。\n* **💡 示例**：\n    > 你的数据源只有“单价”和“数量”两列。你可以在数据视图中新建一列，输入简单的 DAX 公式：`销售额 = '订单表'[单价] * '订单表'[数量]`，引擎会逐行为你计算出结果。\n\n#### 3. 模型视图 (Model View)\n* **描述**：数据架构的心脏。遵循关系型数据库的逻辑，最推荐的最佳实践是构建**星型模型 (Star Schema)**。\n* **主要操作**：通过拖拽字段，建立事实表 (Fact Table) 和维度表 (Dimension Table) 之间的连线（通常是 1对多 `1:N` 关系）。\n* **💡 示例**：\n    > 中心是一个庞大的 `销售事实表`（包含订单ID、日期ID、客户ID、金额），周围环绕着 `日期维度表`、`客户维度表` 和 `产品维度表`。通过连线，当你在报表中使用 `日期维度表` 的“年份”作为筛选器时，它能正确过滤中心事实表的金额。\n\n#### 4. DAX 查询视图 (DAX Query View) \n* **描述**：Power BI 较新的功能，为开发者提供了一个类似 SQL Server Management Studio 的查询环境。\n* **主要操作**：无需创建视觉对象即可快速测试和调试 DAX 表达式的输出结果，支持使用 `EVALUATE` 语句。\n* **💡 示例**：\n    ```dax\n    // 快速测试“2023年总销售额”度量值，并以表格形式预览结果\n    EVALUATE\n    SUMMARIZECOLUMNS(\n        '日期表'[年份],\n        \"总销售额\", [Total Sales]\n    )\n    ```\n\n---\n\n### 关键功能面板\n\n#### 1. 功能区 (Ribbon)\n* **描述**：顶部的菜单栏，包含“主页”、“插入”、“建模”、“视图”等选项卡。\n* **高频操作**：点击“转换数据”以进入 Power Query 编辑器；点击“新建度量值”开始编写 DAX 公式。\n\n#### 2. 筛选器 (Filters) 面板\n* **描述**：管理报表中数据可见性的逻辑层，分为三个逐渐扩大的作用域。\n* **层级拆解**：\n    * **视觉对象级 (Visual-level)**：仅对当前选中的柱状图生效（例如：仅显示利润 Top 5 的产品）。\n    * **页面级 (Page-level)**：对当前这一页的所有图表生效（例如：这一页只分析“2023年”的数据）。\n    * **报表级 (Report-level)**：对所有页面生效（例如：整个文件排除“已退货”的订单数据）。\n\n#### 3. 可视化 (Visuals) 面板\n* **原生视觉对象**：提供柱状图、折线图、瀑布图、散点图、仪表盘、地图等 30 多种标准图表。\n* **自定义视觉对象 (Custom Visuals)**：如果原生图表不够用，可以点击 `...` (获取更多视觉对象)，连接到微软的 AppSource 应用商店。\n* **属性配置区**：\n    * **字段槽**：将数据拖入X轴、Y轴、图例、工具提示(Tooltips)等区域。\n    * **格式设置**：微调图表的颜色、字体大小、数据标签、背景、阴影等 UI 细节。\n* **💡 示例**：\n    > 你需要展示项目的进度排期。由于原生图表中没有甘特图，你打开 AppSource 搜索并免费下载了 \"Gantt Chart by Microsoft\"，然后将其拖入画布，将“项目名称”、“开始日期”和“结束日期”放入对应的字段槽中，瞬间完成项目排期可视化。",
+    "contentEn": "\nPower BI is more than just a charting tool; it is an **enterprise-grade ecosystem** consisting of multiple components. It transforms disparate data into coherent, visually immersive, and interactive insights.\n\n---\n\n## 1. The Core Trio\n\n### Power BI Desktop (Development Center)\n* **Positioning**: A free Windows desktop application, the main battleground for analysts and report developers.\n* **Core Engines**:\n    * **Power Query (M Language)**: Responsible for data extraction, transformation, and loading (ETL).\n    * **VertiPaq Engine**: Responsible for compressing and processing columnar data in memory at lightning speed.\n* **Features**: Connect to hundreds of data sources, clean data, build relational models, write DAX measures, and design interactive reports.\n* **Output**: Generates `.pbix` files containing data, models, and views.\n* **💡 Scenario Example**:\n    > You need to analyze the company's sales performance. In Desktop, you connect to the company's SQL Server database (to get historical orders) and a local Excel file (to get next year's sales targets). You use Power Query to clean up empty rows in Excel, link the two together in the Model View via \"Date\" and \"Product ID\", and finally create an interactive report with bar charts and slicers.\n\n### Power BI Service (Publishing & Centralized Management)\n* **Positioning**: An Azure cloud-based SaaS (Software as a Service) platform, the core of team collaboration and report distribution.\n* **Features**:\n    * **Dashboard**: Pins core charts (Tiles) from multiple different reports onto a single page to provide a global overview.\n    * **On-premises data gateway**: Connects the cloud to local databases, enabling scheduled or real-time automatic data refreshes.\n    * **Row-Level Security (RLS)**: Controls the data access permissions for different users.\n* **Collaboration**: Team co-development via Workspaces, and broad, read-only content distribution across the company via Apps.\n* **💡 Scenario Example**:\n    > After report development is complete, you publish it to the Service. To ensure data security, you set up **RLS (Row-Level Security)**: When the East China Sales Manager logs in, the report automatically filters so he can only see East China's data, whereas the National Director can see all the data. Finally, you set the data to refresh automatically every morning at 8:00 AM.\n\n### Power BI Mobile (Mobile Decision Making)\n* **Positioning**: Native applications for iOS and Android.\n* **Value**: Allows executives and business personnel to monitor business health anytime, anywhere.\n* **Key Features**: Supports touch interaction, scanning QR codes to directly filter physical equipment data in reports, and receiving data-driven alerts.\n* **💡 Scenario Example**:\n    > You set up a **Data Alert** in the Service. When the \"Today's Inventory Turnover Rate\" drops below 15%, Power BI Mobile immediately pops up a push notification on your phone, allowing you to intervene and handle the anomaly promptly even while on a business trip.\n\n---\n\n## 2. Deep Dive into the Desktop Interface\n\n### The Four Core Views\n\n#### 1. Report View\n* **Description**: This is your digital canvas, supporting multi-page design (similar to PPT or Excel Sheets).\n* **Interaction Mechanism**: The most powerful feature in the Report View is **Cross-filtering**.\n* **💡 Example**:\n    > There is a map of \"Sales by Province\" and a bar chart of \"Profit by Product\" on the page. When you click \"Guangdong Province\" on the map, the bar chart automatically reacts, highlighting only the product profits corresponding to Guangdong Province. This linkage requires no coding.\n\n#### 2. Data View\n* **Description**: View the detailed data loaded into memory in a tabular format.\n* **Key Operations**: Here you can check data types (ensuring the \"Date\" column is correctly identified as a date format rather than text) and create **Calculated Columns**.\n* **💡 Example**:\n    > Your data source only has two columns: \"Unit Price\" and \"Quantity\". You can create a new column in the Data View and enter a simple DAX formula: `Sales Amount = 'Order Table'[Unit Price] * 'Order Table'[Quantity]`. The engine will calculate the result row by row for you.\n\n#### 3. Model View\n* **Description**: The heart of the data architecture. Following relational database logic, the most recommended best practice is to build a **Star Schema**.\n* **Key Operations**: By dragging and dropping fields, establish connections (usually 1-to-many `1:N` relationships) between Fact Tables and Dimension Tables.\n* **💡 Example**:\n    > In the center is a massive `Sales Fact Table` (containing Order ID, Date ID, Customer ID, Amount), surrounded by a `Date Dimension Table`, `Customer Dimension Table`, and `Product Dimension Table`. Through the relationships, when you use the \"Year\" from the `Date Dimension Table` as a filter in your report, it correctly filters the amounts in the central fact table.\n\n#### 4. DAX Query View \n* **Description**: A newer feature in Power BI, providing developers with a query environment similar to SQL Server Management Studio.\n* **Key Operations**: Quickly test and debug DAX expression outputs without creating visual objects, supporting the use of the `EVALUATE` statement.\n* **💡 Example**:\n    ```dax\n    // Quickly test the \"2023 Total Sales\" measure and preview the results in a table format\n    EVALUATE\n    SUMMARIZECOLUMNS(\n        'DateTable'[Year],\n        \"Total Sales\", [Total Sales]\n    )\n    ```\n\n---\n\n### Key Function Panels\n\n#### 1. Ribbon\n* **Description**: The top menu bar, containing tabs like Home, Insert, Modeling, and View.\n* **Frequent Operations**: Click \"Transform data\" to enter the Power Query Editor; click \"New measure\" to start writing a DAX formula.\n\n#### 2. Filters Panel\n* **Description**: Manages the logic layer of data visibility in the report, divided into three progressively expanding scopes.\n* **Hierarchy Breakdown**:\n    * **Visual-level**: Affects only the currently selected chart (e.g., only show the Top 5 products by profit).\n    * **Page-level**: Affects all charts on the current page (e.g., this page only analyzes \"2023\" data).\n    * **Report-level**: Affects all pages (e.g., exclude \"Returned\" order data from the entire file).\n\n#### 3. Visualizations Panel\n* **Native Visuals**: Provides over 30 standard charts like bar charts, line charts, waterfall charts, scatter plots, gauges, and maps.\n* **Custom Visuals**: If native charts are not enough, you can click `...` (Get more visuals) to connect to Microsoft's AppSource store.\n* **Property Configuration Area**:\n    * **Field Wells**: Drag data into areas like the X-axis, Y-axis, Legend, and Tooltips.\n    * **Formatting**: Fine-tune UI details like chart colors, font sizes, data labels, backgrounds, and shadows.\n",
+    "quiz": [
+      {
+        "id": "q1_1",
+        "questionZh": "在 Power BI 工作流中，连接原始数据并建立星型模型的最佳位置是？",
+        "questionEn": "In the Power BI workflow, where is the best place to connect to raw data and build a star schema?",
+        "optionsZh": [
+          "Power BI Service",
+          "Power BI Desktop",
+          "Power BI Mobile",
+          "OneDrive"
+        ],
+        "optionsEn": [
+          "Power BI Service",
+          "Power BI Desktop",
+          "Power BI Mobile",
+          "OneDrive"
+        ],
+        "correctIndex": 1,
+        "explanationZh": "Power BI Desktop 是所有开发工作的起点，包含建模和 ETL 引擎。",
+        "explanationEn": "Power BI Desktop is the starting point for all authoring, containing the modeling and ETL engines."
+      },
+      {
+        "id": "q1_2",
+        "questionZh": "如果您想在多个表之间连线并管理数据的过滤流向，应进入哪个视图？",
+        "questionEn": "Which view should you use to link tables and manage data filtering flow?",
+        "optionsZh": [
+          "报表视图",
+          "数据视图",
+          "模型视图",
+          "筛选器面板"
+        ],
+        "optionsEn": [
+          "Report View",
+          "Data View",
+          "Model View",
+          "Filter Pane"
+        ],
+        "correctIndex": 2,
+        "explanationZh": "模型视图 (Model View) 专门用于维护表间关系。",
+        "explanationEn": "Model View is specifically designed for maintaining relationships between tables."
+      },
+      {
+        "id": "q1_3",
+        "questionZh": "Power BI Service (云端) 最核心的功能是什么？",
+        "questionEn": "What is the primary function of Power BI Service (Cloud)?",
+        "optionsZh": [
+          "数据清洗",
+          "发布与共享报表",
+          "离线查看数据",
+          "连接 Excel"
+        ],
+        "optionsEn": [
+          "Data Cleaning",
+          "Publishing & Sharing Reports",
+          "Offline data viewing",
+          "Connecting to Excel"
+        ],
+        "correctIndex": 1,
+        "explanationZh": "Service 的核心在于协作、发布和共享。",
+        "explanationEn": "The core of the Service is collaboration, publishing, and sharing."
+      },
+      {
+        "id": "q1_4",
+        "questionZh": "在 Desktop 的报表视图中，哪个面板用于选择不同的图表类型？",
+        "questionEn": "In the Desktop Report View, which pane is used to select chart types?",
+        "optionsZh": [
+          "字段 (Fields)",
+          "可视化 (Visualizations)",
+          "筛选器 (Filters)",
+          "选择 (Selection)"
+        ],
+        "optionsEn": [
+          "Fields",
+          "Visualizations",
+          "Filters",
+          "Selection"
+        ],
+        "correctIndex": 1,
+        "explanationZh": "可视化面板提供了各种内置和自定义图表。",
+        "explanationEn": "The Visualizations pane provides various built-in and custom charts."
+      },
+      {
+        "id": "q1_5",
+        "questionZh": "对于需要随时随地通过手机查看报表的高管，最适合的组件是？",
+        "questionEn": "Which component is best for executives who need to view reports on mobile devices anytime?",
+        "optionsZh": [
+          "PBI Desktop",
+          "PBI Mobile",
+          "PBI Report Server",
+          "PBI Embedded"
+        ],
+        "optionsEn": [
+          "PBI Desktop",
+          "PBI Mobile",
+          "PBI Report Server",
+          "PBI Embedded"
+        ],
+        "correctIndex": 1,
+        "explanationZh": "Power BI Mobile 专为移动端访问和警报提醒而设计。",
+        "explanationEn": "Power BI Mobile is specifically designed for mobile access and alerts."
+      }
+    ]
+  },
+  {
+    "id": "pbi_query",
+    "stage": 2,
+    "titleZh": "Power Query 函数库与 ETL 手册",
+    "titleEn": "Power Query Library & ETL Manual",
+    "objectiveZh": "深入学习 Power Query 转换算子，掌握 M 语言核心逻辑与工业级 ETL 处理规范。",
+    "objectiveEn": "Deeply study Power Query transformation operators and master M Language logic & ETL standards.",
+    "duration": "20 min",
+    "points": 150,
+    "contentZh": "\n# 数据清洗心脏：Power Query 高级手册\n\n在 Power BI 的真实应用场景中，流传着这样一条铁律：**超过 80% 的工作是在处理“脏数据”**。如果说报表视图是展示成果的橱窗，那么 Power Query (PQ) 就是后台的无菌手术室，它是您重塑数据结构、清洗异常值的“主手术刀”。\n\n---\n\n## 1. 核心转换函数库 (The Operator Library)\n\n### 数据结构重塑 (Reshaping Data)\n数据形状的转换是 Power Query 中最高频的操作，这决定了数据能否被引擎正确聚合。\n\n* **逆透视 (Unpivot) - 宽表变长表**\n    * **核心价值**：人类习惯阅读“宽表”（如列名为 1月、2月、3月），但 BI 引擎和关系型数据库只认识“长表”。逆透视能将作为列标题的属性转换为数据行，使其符合 BI 聚合要求。\n    * **💡 工业场景示例**：\n        > 你的源 Excel 有四列：`[产品ID]`、`[1月销量]`、`[2月销量]`、`[3月销量]`。选中后三列点击“逆透视”，数据将重组为三列：`[产品ID]`、`[属性 (月份)]`、`[值 (销量)]`。现在你可以用 DAX 轻松计算季度总和了。\n\n* **透视 (Pivot) - 长表变宽表**\n    * **核心价值**：逆透视的反向过程，通常用于重组键值对数据，以适配特定的展示或计算逻辑。\n    * **💡 工业场景示例**：\n        > 数据库日志记录为 `[用户ID]`、`[操作类型]` (登录/退出/购买)、`[时间]`。通过透视“操作类型”列，可以把数据转换为每个用户一行，拥有单独的 `[登录时间]`、`[退出时间]` 列，方便计算停留时长。\n\n### 数据表关联与整合 (Combining Data)\n处理来自不同业务系统的数据孤岛。\n\n* **合并查询 (Merge) - 横向扩展**\n    * **核心价值**：等同于 SQL 中的 `JOIN` 操作。通过一个或多个共同的“键”（匹配列），将一张表的列引入到另一张表中。\n    * **支持类型**：左外部 (Left Outer - 默认且最常用)、右外部、完全外部、内部 (Inner) 以及反向 (Anti) 连接。\n    * **💡 工业场景示例**：\n        > 你有一张只有 `[客户ID]` 的 `订单明细表`，通过合并查询，将其与 `客户信息字典表` 关联，轻松把 `[客户姓名]` 和 `[所属大区]` 拉取到订单表中。\n\n* **追加查询 (Append) - 纵向堆叠**\n    * **核心价值**：等同于 SQL 中的 `UNION ALL`。用于将列名和格式相同（或相似）的不同数据表首尾相连。\n    * **💡 工业场景示例**：\n        > 公司的销售数据按月存放，你文件夹里有 12 个 Excel 文件（1月表至12月表）。使用追加查询，你可以一键将它们纵向拼接成一张包含全年数据的 `历史总表`。\n\n---\n\n## 2. 工业级 ETL 最佳实践指南\n\n### 计算前置原则 (Roche's Maxim of Data Transformation)\n在企业级数据建模中，这被称为**罗氏法则**。\n\n* **🥇 黄金准则**：能在源端 (如 SQL Server/数据库) 做的计算，就不在 Power Query 做；能在 Power Query 做的转换，就**绝对不要**在 DAX 中通过“新建计算列”来做。\n* **底层原因**：\n    1. **性能与体积**：Power Query 引擎在将数据加载到数据模型（VertiPaq）之前，会对数据进行极高比例的压缩。而在 DAX 中写计算列，数据不经过深度压缩，会显著增加 `.pbix` 文件的体积，并拖慢报表刷新和运行速度。\n    2. **查询折叠 (Query Folding)**：优秀的 PQ 步骤会被自动翻译成 SQL 语句扔回给数据库服务器执行，利用服务器算力，大幅减轻本地内存负担。\n\n### M 语言：步骤背后的逻辑代码\n在 Power Query 编辑器右侧的“应用步骤”中，每一次鼠标点击，都会在后台生成一段 M 代码。\n\n* **语言特性**：M 是一种函数式编程语言。\n* **严格区分大小写**：`Table.Column` 与 `table.column` 是完全不同的。所有的原生 M 函数首字母都必须大写。\n* **延迟加载 (Lazy Evaluation)**：只有当数据真正需要输出（如刷新报表）时，M 语言的转换步骤才会真正被求值和执行，这保证了极高的运行效率。\n\n#### 📌 常见的高频 M 函数速查：\n在使用高级编辑器或自定义列时，这些函数会成为你的利器：\n\n* **文本清洗**：\n  * `Text.Proper([列名])`：将文本转换为首字母大写（如 \"apple\" 变 \"Apple\"）。\n  * `Text.Trim([列名])`：自动去除字符串前后的多余空格。\n* **日期处理**：\n  * `Date.EndOfMonth([日期列])`：自动获取指定日期所在月份的最后一天，常用于财务结算对账。\n  * `Date.Year([日期列])`：提取年份。\n* **表格操作**：\n  * `Table.SelectRows`：底层执行行过滤逻辑的函数（当你点击列头漏斗进行筛选时，后台就是调用的这个函数）。",
+    "contentEn": "# The Heart of Data: Power Query Advanced Manual\n\nIn Power BI, over 80% of efforts go into data cleaning. Power Query (PQ) is your precision scalpel.\n\n## 1. Core Transformation Library\n\n### Schema Reshaping\n- **Unpivot**:\n  - **Industry Case**: Handles wide tables with headers like \"Jan, Feb, Mar\".\n  - **Logic**: Converts them into \"Attribute\" and \"Value\" pairs, satisfying long-format requirements for BI.\n- **Pivot**:\n  - **Logic**: Re-arranges data to fit specific visualization needs.\n\n### Table Integration\n- **Merge**:\n  - Equivalent to SQL **Join**.\n  - Supports Left Outer, Right Outer, Full Outer, Inner, and Anti Joins.\n- **Append**:\n  - Equivalent to SQL **UNION ALL**.\n  - Stacks tables with identical schemas vertically (e.g., merging Jan data and Feb data).\n\n---\n\n## 2. Industrial-Grade ETL Best Practices\n\n### The \"Preprocessing\" Rule\n- **Golden Rule**: If it can be done at the source (SQL), do it there. If not, do it in Power Query instead of DAX Calculated Columns.\n- **Why**: PQ compresses data during load; DAX Computed Columns increase .pbix file size significantly.\n\n### M Language Essentials\nM is the functional language behind PQ.\n- **Case Sensitivity**: `Table.Column` is NOT the same as `table.column`.\n- **Lazy Evaluation**: Steps are executed in order only when data is refreshed.\n\n### Useful M Functions Quick Reference:\n- `Text.Proper`: Capitalizes first letters.\n- `Date.EndOfMonth`: Finds last day of the month.\n- `Table.SelectRows`: Filters table rows.",
+    "quiz": [
+      {
+        "id": "q2_1",
+        "questionZh": "在工业 SCADA 导出数据中，将 12 个月份的列标题转为单列“月份”应该使用什么操作？",
+        "questionEn": "In industrial SCADA exports, what operator converts 12 month columns into a single \"Month\" column?",
+        "optionsZh": [
+          "转置 (Transpose)",
+          "逆透视 (Unpivot)",
+          "透视 (Pivot)",
+          "拆分列 (Split)"
+        ],
+        "optionsEn": [
+          "Transpose",
+          "Unpivot",
+          "Pivot",
+          "Split"
+        ],
+        "correctIndex": 1,
+        "explanationZh": "逆透视专门用于将多列标题属性化，是 Power Query 最常用的数据重塑工具。",
+        "explanationEn": "Unpivot is designed for attribute-naming multiple columns, the most common reshaping tool in PQ."
+      },
+      {
+        "id": "q2_2",
+        "questionZh": "要把两个字段完全相同但月份不同的销售进度表横向垂直堆叠在一起，应该选择？",
+        "questionEn": "To vertically stack two sales tables with identical schemas but different months, you should choose?",
+        "optionsZh": [
+          "合并查询 (Merge)",
+          "追加查询 (Append)",
+          "维度关联",
+          "透视列"
+        ],
+        "optionsEn": [
+          "Merge Queries",
+          "Append Queries",
+          "Dimension Linking",
+          "Pivot Column"
+        ],
+        "correctIndex": 1,
+        "explanationZh": "追加查询 (Append) 用于垂直堆叠数据行。",
+        "explanationEn": "Append Queries is used for vertically stacking data rows."
+      },
+      {
+        "id": "q2_3",
+        "questionZh": "关于 M 语言，以下哪个描述是正确的？",
+        "questionEn": "Which of the following descriptions about M language is correct?",
+        "optionsZh": [
+          "不区分大小写",
+          "是基于 SQL 语法的",
+          "区分大小写 (Case Sensitive)",
+          "只能在云端运行"
+        ],
+        "optionsEn": [
+          "Not case sensitive",
+          "Based on SQL syntax",
+          "Case Sensitive",
+          "Only runs in cloud"
+        ],
+        "correctIndex": 2,
+        "explanationZh": "M 语言是严格区分大小写的函数式语言。",
+        "explanationEn": "M language is a strictly case-sensitive functional language."
+      },
+      {
+        "id": "q2_4",
+        "questionZh": "“计算前置”原则建议我们优先在哪里进行数据计算和清洗？",
+        "questionEn": "The \"Preprocessing\" rule suggests we prioritize data calculation and cleaning where?",
+        "optionsZh": [
+          "DAX 计算列",
+          "Power BI 报表视图",
+          "数据源端或 Power Query",
+          "仪表板面板"
+        ],
+        "optionsEn": [
+          "DAX Calculated Columns",
+          "PBI Report View",
+          "Source or Power Query",
+          "Dashboard Panes"
+        ],
+        "correctIndex": 2,
+        "explanationZh": "为了性能和文件体积，应尽可能在加载到模型前完成处理。",
+        "explanationEn": "For performance and file size, processing should be done before loading into the model."
+      },
+      {
+        "id": "q2_5",
+        "questionZh": "如果想把文本“power bi”转为“Power Bi”，可以使用哪个 M 函数？",
+        "questionEn": "To convert text \"power bi\" to \"Power Bi\", which M function can be used?",
+        "optionsZh": [
+          "Text.Upper",
+          "Text.Lower",
+          "Text.Proper",
+          "Text.Trim"
+        ],
+        "optionsEn": [
+          "Text.Upper",
+          "Text.Lower",
+          "Text.Proper",
+          "Text.Trim"
+        ],
+        "correctIndex": 2,
+        "explanationZh": "Text.Proper 可以将文本转换为首字母大写格式。",
+        "explanationEn": "Text.Proper converts text to proper case (capitalizing first letters)."
+      }
+    ]
+  },
+  {
+    "id": "pbi_model",
+    "stage": 3,
+    "titleZh": "数字化架构：星型建模百科",
+    "titleEn": "Architecture: Star Schema Encyclopedia",
+    "objectiveZh": "系统掌握事实表、维度表的设计规范，理解 1:N 关系与交叉筛选方向的底层原理。",
+    "objectiveEn": "Master Fact & Dimension design standards and understand 1:N relationships & filter directions.",
+    "duration": "25 min",
+    "points": 180,
+    "contentZh": "# 数据建模：Power BI 性能的终极引擎\n\n如果说 Power Query 是“找材料”，那么建模就是“盖大楼”。好的架构能让报表在亿级数据下秒开。\n\n## 1. 星型架构 (Star Schema) 原理\n\n星型架构是由一个**中心事实表**和多个**周围维度表**组成的结构，形状像一颗星。\n\n### 事实表 (Fact Tables)\n- **定义**：业务过程的“记录仪”（如：工单产量、故障停机、销售额）。\n- **特征**：行数极多（亿级）、字段以数值 and 外键为主、高度动态。\n\n### 维度表 (Dimension Tables)\n- **定义**：分析数据的“切入点”（如：日期、产品、工厂地图、物料分类）。\n- **特征**：行数较少、包含描述性文本、作为筛选器 source。\n\n---\n\n## 2. 关系说明书 (The Relationship Manual)\n\n### 基数 (Cardinality)\n- **1:N (一对多)**：标准的建模方式。1 条产品记录对应多条销售记录。\n- **1:1 (一对一)**：不常用，通常应合并两表。\n- **M:N (多对多)**：高阶场景，如“一辆车有多个司机，一个司机开多辆车”，需通过桥接表解决。\n\n### 交叉筛选方向 (Cross-filter Direction)\n- **单向 (Single)**：【推荐】维度表流向事实表。逻辑清晰，性能最优。\n- **双向 (Both)**：允许事实表反向过滤维度表。**警告：仅在特殊场景使用，极易造成性能低下或逻辑循环冲突。**\n\n---\n\n## 3. 日期维度：建模之魂\n在工业分析中，决不能直接使用事实表中的日期列。\n- **日期表 (Date Table)**：必须建立一个连续的、不中断的日期表。\n- **AUTO_DATE_TIME**：强烈建议在设置中关闭 Power BI 默认的自动日期层次结构，以节省内存空间。",
+    "contentEn": "# Data Modeling: The Engine of Performance\n\nIf Power Query is gathering materials, Modeling is architecture. A strong schema allows billion-row reports to load instantly.\n\n## 1. The Star Schema Principles\n\nA center **Fact Table** surrounded by multiple **Dimension Tables**, resembling a star.\n\n### Fact Tables\n- **Definition**: The \"Recorder\" of events (e.g., Production Counts, Downtime, Sales).\n- **Features**: Billions of rows possible, quantitative values, foreign keys, highly dynamic.\n\n### Dimension Tables\n- **Definition**: The \"Entry points\" for filtering (e.g., Dates, Products, Factory Maps).\n- **Features**: Fewer rows, descriptive text, the source for slicers.\n\n---\n\n## 2. Relationship Manual\n\n### Cardinality\n- **1:N (One-to-Many)**: The Gold Standard. One product entry to many sales logs.\n- **1:1 (One-to-One)**: Rare, usually implies tables should be merged.\n- **M:N (Many-to-Many)**: Advanced cases (one car to many drivers, one driver to many cars). Requires bridge tables.\n\n### Cross-filter Direction\n- **Single**: 【Recommended】 Filter flows from Dimension to Fact. Clear logic, best performance.\n- **Both**: Fact filters back to Dimension. **Warning: Use sparingly. Can lead to ambiguity and performance collapse.**\n\n---\n\n## 3. Date Dimension: The Soul of BI\nNever use raw date columns from your Fact tables for analysis.\n- **Calendar Table**: A continuous, gap-free date table is mandatory.\n- **Disable Auto-time**: Recommended to turn OFF default Auto Date/Time in settings to minimize memory bloat.",
+    "quiz": [
+      {
+        "id": "q3_1",
+        "questionZh": "在标准星型架构中，存放“产品描述、规格、颜色”等信息的表被称为？",
+        "questionEn": "In a standard Star Schema, the table containing \"Product descriptions, specs, colors\" is called?",
+        "optionsZh": [
+          "关系表",
+          "事实表",
+          "维度表",
+          "切片器表"
+        ],
+        "optionsEn": [
+          "Relationship Table",
+          "Fact Table",
+          "Dimension Table",
+          "Slicer Table"
+        ],
+        "correctIndex": 2,
+        "explanationZh": "维度表存放属性 and 描述信息，用于筛选事实表。",
+        "explanationEn": "Dimension tables store attributes and descriptions used to filter Facts."
+      },
+      {
+        "id": "q3_2",
+        "questionZh": "事实表的主要特征是什么？",
+        "questionEn": "What is the main characteristic of a Fact Table?",
+        "optionsZh": [
+          "存放业务描述",
+          "数据量极少",
+          "记录业务度量值 (如产值、工单)",
+          "只有一列"
+        ],
+        "optionsEn": [
+          "Stores descriptions",
+          "Few rows",
+          "Records measures (Value, Orders)",
+          "Only one column"
+        ],
+        "correctIndex": 2,
+        "explanationZh": "事实表记录了具体的业务事件和数值指标。",
+        "explanationEn": "Fact tables record specific business events and quantitative metrics."
+      },
+      {
+        "id": "q3_3",
+        "questionZh": "在星型架构中，最标准、性能最好的表间关系基数是？",
+        "questionEn": "What is the most standard and performant cardinality in a star schema?",
+        "optionsZh": [
+          "1:1",
+          "M:N",
+          "1:N (一对多)",
+          "N:M"
+        ],
+        "optionsEn": [
+          "1:1",
+          "M:N",
+          "1:N (One-to-Many)",
+          "N:M"
+        ],
+        "correctIndex": 2,
+        "explanationZh": "1:N 是星型模型的灵魂，由维度表的一条记录对应事实表的多条记录。",
+        "explanationEn": "1:N is the soul of Star Schema, with one dimension entry linking to many fact entries."
+      },
+      {
+        "id": "q3_4",
+        "questionZh": "为什么专家建议将交叉筛选方向设置为“单向”？",
+        "questionEn": "Why do experts recommend setting the cross-filter direction to \"Single\"?",
+        "optionsZh": [
+          "为了让界面更好看",
+          "防止模型出现死循环和性能崩溃",
+          "单向可以多选",
+          "没有任何区别"
+        ],
+        "optionsEn": [
+          "To look better",
+          "Prevent cycles and performance collapse",
+          "Single allows multi-select",
+          "No difference"
+        ],
+        "correctIndex": 1,
+        "explanationZh": "单向流动逻辑清晰，双向流动在大型模型中极易引发计算冲突。",
+        "explanationEn": "Single flow provides clear logic; both-way filters often cause conflicts in large models."
+      },
+      {
+        "id": "q3_5",
+        "questionZh": "关于“日期表”，以下哪项是工业化报表的硬性要求？",
+        "questionEn": "Regarding the \"Date Table\", which is a hard requirement for industrial reports?",
+        "optionsZh": [
+          "日期可以不连续",
+          "必须是连续且不中断的",
+          "只能有年份列",
+          "日期表必须是事实表"
+        ],
+        "optionsEn": [
+          "Dates can jump",
+          "Must be continuous and gap-free",
+          "Year only",
+          "Must be a fact table"
+        ],
+        "correctIndex": 1,
+        "explanationZh": "时间智能函数要求日期表必须包含连续的日期范围。",
+        "explanationEn": "Time intelligence functions require a date table with a continuous range of dates."
+      }
+    ]
+  },
+  {
+    "id": "pbi_dax_basic",
+    "stage": 4,
+    "titleZh": "DAX 函数库：语法核心与上下文",
+    "titleEn": "DAX Library: Syntax & Context",
+    "objectiveZh": "区分 DAX 三大计算对象，理解行上下文与筛选上下文的转换机制。",
+    "objectiveEn": "Distinguish calculators and understand the mechanism between Row and Filter Context.",
+    "duration": "30 min",
+    "points": 200,
+    "contentZh": "\n# DAX (Data Analysis Expressions) 权威手册\n\nDAX 是基于 Excel 公式进化而来的函数式语言，但其内核完全不同。\n\n## 1. DAX 三大计算对象\n\n| 对象 | 计算时间 | 存储位置 | 典型用途 |\n| :--- | :--- | :--- | :--- |\n| **度量值 (Measure)** | 交互时 (实时) | 不占 CPU/内存 | 核心 KPI、利润、增长率 |\n| **计算列 (Column)** | 刷新时 | 写入磁盘/内存 | 切片器筛选、作为图表轴 |\n| **计算表 (Table)** | 刷新时 | 写入磁盘/内存 | 创建特殊的日期表、汇总表 |\n\n---\n\n## 2. 核心语法函数速查\n\n### 聚合函数\n- `SUM(Table[Col])`: 标准求和。\n- `AVERAGEX(Table, Expression)`: **迭代函数**。先计算每一行的表达式，再取平均。\n- `COUNTROWS(Table)`: 统计行数（通常用于统计工单数）。\n\n### 安全除法\n- `DIVIDE(Numerator, Denominator, AlternateResult)`:\n  - **工业级标准**：自动处理分母为 0 的异常，不会报错。\n\n---\n\n## 3. 理解“上下文 (Context)” —— DAX 的灵魂\n\n### 行上下文 (Row Context)\n- 当你在建立计算列或使用 X 函数（如 SUMX）时启动。它知道“当前这一行”是什么。\n\n### 筛选上下文 (Filter Context)\n- 这才是 BI 的魅力。当你点击图表上的“2023年”，整个模型就进入了 2023 的筛选上下文。\n- **度量值只在筛选上下文中存在。**",
+    "contentEn": "# DAX (Data Analysis Expressions) Authoritative Manual\n\nDAX is a functional language evolved from Excel formulas, but its underlying engine is entirely different.\n\n## 1. The Three DAX Calculators\n\n| Object | Timing | Storage | Case |\n| :--- | :--- | :--- | :--- |\n| **Measure** | On-the-fly (Realtime) | None | Core KPIs, Margins, Growth |\n| **Calculated Column** | On Refresh | Persistent | Slicer filters, Axis |\n| **Calculated Table** | On Refresh | Persistent | Custom Calendars, Summary Tables |\n\n---\n\n## 2. Syntax Quick Reference\n\n### Aggregation\n- `SUM(Table[Col])`: Standard sum.\n- `AVERAGEX(Table, Expression)`: **Iterator**. Computes expression for every row first, then averages.\n- `COUNTROWS(Table)`: Counts rows (e.g., number of work orders).\n\n### Safe Division\n- `DIVIDE(Numerator, Denominator, AlternateResult)`:\n  - **Standard**: Automatically handles division-by-zero errors.\n\n---\n\n## 3. Understanding \"Context\" —— The Soul of DAX\n\n### Row Context\n- Active when creating Calculated Columns or using X-functions (e.g., SUMX). It knows \"the current row\".\n\n### Filter Context\n- The magic of BI. When you click \"2023\" on a chart, the whole model enters the \"2023\" filter state.\n- **Measures only exist within Filter Contexts.**",
+    "quiz": [
+      {
+        "id": "q4_1",
+        "questionZh": "哪种 DAX 计算对象在模型刷新后不会占用任何磁盘空间？",
+        "questionEn": "Which DAX calculation object takes NO disk space after model refresh?",
+        "optionsZh": [
+          "计算列 (Calculated Column)",
+          "计算表 (Calculated Table)",
+          "度量值 (Measure)",
+          "M 语言自定义列"
+        ],
+        "optionsEn": [
+          "Calculated Column",
+          "Calculated Table",
+          "Measure",
+          "M Custom Column"
+        ],
+        "correctIndex": 2,
+        "explanationZh": "度量值是虚拟存在的计算公式，仅在查询时即时运行，不占用模型存储。",
+        "explanationEn": "Measures are virtual formulas that run on-demand, consuming no storage space in the model."
+      },
+      {
+        "id": "q4_2",
+        "questionZh": "如果要作为图表的“轴 (Axis)”或切片器使用，计算应写在？",
+        "questionEn": "If you want to use a calculation as a chart \"Axis\" or a slicer, it should be a?",
+        "optionsZh": [
+          "度量值",
+          "计算列 (Calculated Column)",
+          "虚拟表",
+          "数据源过滤器"
+        ],
+        "optionsEn": [
+          "Measure",
+          "Calculated Column",
+          "Virtual Table",
+          "Source Filter"
+        ],
+        "correctIndex": 1,
+        "explanationZh": "计算列将结果实体化到表中，可以直接作为轴或筛选器使用。",
+        "explanationEn": "Calculated columns materialize results in the table, enabling them to be used as axes or slicers."
+      },
+      {
+        "id": "q4_3",
+        "questionZh": "SUMX 与 SUM 的主要区别是什么？",
+        "questionEn": "What is the main difference between SUMX and SUM?",
+        "optionsZh": [
+          "SUMX 是加密的",
+          "SUMX 是迭代函数，支持逐行运算",
+          "SUM 速度比 SUMX 快 100 倍",
+          "SUMX 只能计算 10 行"
+        ],
+        "optionsEn": [
+          "SUMX is encrypted",
+          "SUMX is an iterator that supports row-by-row calc",
+          "SUM is 100x faster",
+          "SUMX limit is 10 rows"
+        ],
+        "correctIndex": 1,
+        "explanationZh": "SUMX (X结尾的函数) 是迭代器，可以在聚合前对每一行进行逻辑运算。",
+        "explanationEn": "X-suffix functions (Iterators) perform logic on each row before aggregating the results."
+      },
+      {
+        "id": "q4_4",
+        "questionZh": "为了防止分母为 0 导致报错，工业标准应使用哪个函数进行除法？",
+        "questionEn": "To prevent div-by-zero errors, which function is the industrial standard for division?",
+        "optionsZh": [
+          "/",
+          "QUOTIENT",
+          "DIVIDE",
+          "MOD"
+        ],
+        "optionsEn": [
+          "/",
+          "QUOTIENT",
+          "DIVIDE",
+          "MOD"
+        ],
+        "correctIndex": 2,
+        "explanationZh": "DIVIDE 函数内置了错误处理机制，更加安全健壮。",
+        "explanationEn": "The DIVIDE function has built-in error handling, making it safer and more robust."
+      },
+      {
+        "id": "q4_5",
+        "questionZh": "当你点击报表中的饼图切片时，此时哪种“上下文”正在生效？",
+        "questionEn": "When you click a pie chart slice in a report, which \"Context\" is active?",
+        "optionsZh": [
+          "行上下文 (Row Context)",
+          "筛选上下文 (Filter Context)",
+          "计算上下文",
+          "导出上下文"
+        ],
+        "optionsEn": [
+          "Row Context",
+          "Filter Context",
+          "Calc Context",
+          "Export Context"
+        ],
+        "correctIndex": 1,
+        "explanationZh": "图表交互产生的筛选条件通过“筛选上下文”传递到整个模型。",
+        "explanationEn": "Filter criteria from visual interactions are propagated through the Filter Context."
+      }
+    ]
+  },
+  {
+    "id": "pbi_advanced_dax",
+    "stage": 5,
+    "titleZh": "进阶：CALCULATE 指挥官与时间智能",
+    "titleEn": "Adv: CALCULATE & Time Intel",
+    "objectiveZh": "全面解析 CALCULATE 函数的筛选转换逻辑，掌握工业界常用的同比、环比、YTD 公式。",
+    "objectiveEn": "Analyze CALCULATE filter transition and master industrial YoY, MoM, and YTD formulas.",
+    "duration": "35 min",
+    "points": 300,
+    "contentZh": "# 马力全开：CALCULATE 深度解析\n\n在 DAX 中，几乎所有的复杂业务逻辑最终都会用到 **CALCULATE**。\n\n## 1. CALCULATE：上下文调控器\n- **基本语法**：`CALCULATE(度量值, 筛选1, 筛选2...)`\n- **能力**：它能“强制改变”筛选环境。\n  - 示例：`CALCULATE([Yield], Product[Type] = \"A\")`。即使你切片器选的是 B，这个公式也会强制计算 A 的产量。\n\n---\n\n## 2. 时间智能库 (Time Intelligence Functions)\n\n工业报表中最核心的需求：**对比**。\n\n### 同比分析 (Year-on-Year)\n- `Sales LY = CALCULATE([Total Sales], SAMEPERIODLASTYEAR('Calendar'[Date]))`\n- **含义**：在去年同期的环境下重新计算销售额。\n\n### 环比分析 (Month-over-Month)\n- `Prev Month = CALCULATE([Total Sales], DATEADD('Calendar'[Date], -1, MONTH))`\n\n### 年初至今 (YTD)\n- `Total YTD = TOTALYTD([Total Sales], 'Calendar'[Date])`\n\n---\n\n## 3. 筛选覆盖原理解析 (Filter Modifiers)\n\n- **ALL**: 忽略所有的筛选器（通常用于计算占比，作为分母）。\n- **FILTER**: 当你的筛选逻辑很复杂（如：`[Sales] > 1000`）时，必须嵌套在 FILTER 函数内作为 CALCULATE 的参数。\n\n---\n\n## 4. 工业案例：OEE (设备综合效率) 计算架构\n\n在制造业中，OEE 是衡量生产效率的核心。通过 DAX 实现自动化的 OEE 监控需要多层嵌套逻辑：\n\n### 核心公式拆解：\n1. **可用率 (Availability)** = `DIVIDE([运行时间], [计划时间])`\n2. **表现性 (Performance)** = `DIVIDE([实际产出], [运行时间] * [理论节拍])`\n3. **质量率 (Quality)** = `DIVIDE([合格品数], [实际产出])`\n4. **OEE** = `[可用率] * [表现性] * [质量率]`",
+    "contentEn": "# Full Power: Deep Dive into CALCULATE\n\nIn DAX, almost every complex business logic eventually involves **CALCULATE**.\n\n## 1. CALCULATE: The Context Controller\n- **Syntax**: `CALCULATE(Measure, Filter1, Filter2...)`\n- **Capability**: It forces a change in the evaluation environment.\n  - Example: `CALCULATE([Yield], Product[Type] = \"A\")`. Even if you select \"Type B\" on a slicer, this formula computes Type A.\n\n---\n\n## 2. Time Intelligence Library\n\nThe core requirement of industrial analytics: **Comparison**.\n\n### YoY Analysis\n- `Sales LY = CALCULATE([Total Sales], SAMEPERIODLASTYEAR('Calendar'[Date]))`\n- **Meaning**: Re-evaluates Total Sales in the context of the same period last year.\n\n### MoM Analysis\n- `Prev Month = CALCULATE([Total Sales], DATEADD('Calendar'[Date], -1, MONTH))`\n\n### Year-to-Date (YTD)\n- `Total YTD = TOTALYTD([Total Sales], 'Calendar'[Date])`\n\n---\n\n## 3. Filter Modifiers\n\n- **ALL**: Ignores all filters (useful for percentage-of-total calculations where ALL is the denominator).\n- **FILTER**: Needed when filter logic is complex (e.g., `[Sales] > 1000`). Must be nested within FILTER as an argument to CALCULATE.",
+    "quiz": [
+      {
+        "id": "q5_1",
+        "questionZh": "如果我想计算当前产品在不考虑任何“颜色”筛选下的总销量，应该使用哪个函数？",
+        "questionEn": "If I want to calculate sales for a product ignoring any \"Color\" filters, which function is needed?",
+        "optionsZh": [
+          "SUM",
+          "SUMX",
+          "CALCULATE 配合 ALL",
+          "FILTER"
+        ],
+        "optionsEn": [
+          "SUM",
+          "SUMX",
+          "CALCULATE with ALL",
+          "FILTER"
+        ],
+        "correctIndex": 2,
+        "explanationZh": "ALL 函数用于清除过滤器，配合 CALCULATE 可以实现忽略部分筛选条件的全局计算。",
+        "explanationEn": "The ALL function clears filters, allowing global calculations that ignore specific slicers when used with CALCULATE."
+      },
+      {
+        "id": "q5_2",
+        "questionZh": "DAX 中唯一能直接“修改或覆盖”当前筛选上下文的指挥官函数是？",
+        "questionEn": "Which command function is the only one that can directly modify or override the current Filter Context?",
+        "optionsZh": [
+          "SUM",
+          "FILTER",
+          "CALCULATE",
+          "MAX"
+        ],
+        "optionsEn": [
+          "SUM",
+          "FILTER",
+          "CALCULATE",
+          "MAX"
+        ],
+        "correctIndex": 2,
+        "explanationZh": "CALCULATE 是 DAX 模型的核心指挥官，负责上下文转换。",
+        "explanationEn": "CALCULATE is the core commander of the DAX engine, responsible for context transition."
+      },
+      {
+        "id": "q5_3",
+        "questionZh": "计算同比 (YoY) 销售额时，通常配合 CALCULATE 使用的时间智能函数是？",
+        "questionEn": "When calculating YoY Sales, which time intelligence function is typically used with CALCULATE?",
+        "optionsZh": [
+          "SAMEPERIODLASTYEAR",
+          "NEXTDAY",
+          "TOTALYTD",
+          "DATESINPERIOD"
+        ],
+        "optionsEn": [
+          "SAMEPERIODLASTYEAR",
+          "NEXTDAY",
+          "TOTALYTD",
+          "DATESINPERIOD"
+        ],
+        "correctIndex": 0,
+        "explanationZh": "SAMEPERIODLASTYEAR 自动完成日期向去年同期的偏移。",
+        "explanationEn": "SAMEPERIODLASTYEAR automatically shifts the date context to the same period last year."
+      },
+      {
+        "id": "q5_4",
+        "questionZh": "在工业 OEE 计算中，表现性 (Performance) 的公式逻辑是？",
+        "questionEn": "In industrial OEE calculation, what is the logic for Performance?",
+        "optionsZh": [
+          "合格品 / 总产量",
+          "实际产出 / (运行时间 * 理论节拍)",
+          "运行时间 / 计划时间",
+          "故障时间 / 总时间"
+        ],
+        "optionsEn": [
+          "Good / Total",
+          "Actual Output / (Run Time * Ideal Cycle)",
+          "Run Time / Planned Time",
+          "Downtime / Total"
+        ],
+        "correctIndex": 1,
+        "explanationZh": "表现性衡量的是设备的实际运行速度与理论预期速度的偏差。",
+        "explanationEn": "Performance measures the deviation between actual speed and theoretical expected speed."
+      },
+      {
+        "id": "q5_5",
+        "questionZh": "DATEADD 函数的灵活性体现在哪？",
+        "questionEn": "How is the DATEADD function flexible?",
+        "optionsZh": [
+          "它可以加密日期",
+          "它可以按年、季、月、日任意平移日期",
+          "它不需要日期表",
+          "它只能向前移动"
+        ],
+        "optionsEn": [
+          "It encrypts dates",
+          "It can shift items by Year, Qtr, Month, or Day",
+          "Needs no Date table",
+          "Only moves forward"
+        ],
+        "correctIndex": 1,
+        "explanationZh": "DATEADD 支持多种颗粒度的时间平移，是非常通用的时间函数。",
+        "explanationEn": "DATEADD supports various granularities for shifting time, making it a highly versatile function."
+      }
+    ]
+  },
+  {
+    "id": "pbi_viz_expert",
+    "stage": 6,
+    "titleZh": "大屏与叙事：工业可视化手册",
+    "titleEn": "Visual Storytelling: Industrial Viz Manual",
+    "objectiveZh": "学习工业大屏的设计规范逻辑，掌握自定义 Tooltip、书签与钻取等高级交互。",
+    "objectiveEn": "Learn industrial UI design standards and master tooltips, bookmarks, and drill-throughs.",
+    "duration": "25 min",
+    "points": 200,
+    "contentZh": "# 高端工业看板设计协议\n\n在工厂车间，报表的**可读性**价值远超其视觉酷炫。\n\n## 1. DAR 设计哲学 (Dashboard-Analysis-Report)\n\n- **第一层：Dashboard (概览层)**\n  - **核心**：高密度 KPI (良率、OEE、当日停机)。\n  - **指标**：一秒钟内反馈“我们赢了吗？”。\n- **第二层：Analysis (分析层)**\n  - **核心**：交互。趋势图、树状图。\n  - **目标**：通过钻取发现异常原因。\n- **第三层：Report (报告层)**\n  - **核心**：明细。表格、矩阵。\n  - **目标**：追溯到具体的工单号或操作员。\n\n---\n\n## 2. 高高级交互功能库\n\n### 页面钻取 (Drill-through)\n允许用户右击一个“产线”，自动跳转到一个专门针对该产线的详细页面，且背景筛选自动对齐。\n\n### 辅助工具提示 (Report Page Tooltips)\n当鼠标悬停在柱形图上时，可以弹出一个**浮动的微型报表页**，而不是简单的文字。\n\n### 书签与导航 (Bookmarks)\n- **应用场景**：通过点击按钮切换“产量视图”和“质量视图”，而无需跳转页面。",
+    "contentEn": "# Industrial Dashboard Design Protocol\n\nIn a factory setting, **Readability** is worth far more than visual \"coolness\".\n\n## 1. The DAR Philosophy\n\n- **Level 1: Dashboard (Overview)**\n  - **Focus**: High-density KPIs (Yield, OEE, Today's Downtime).\n  - **Goal**: Is the production winning right now? (The 1-second test).\n- **Level 2: Analysis**\n  - **Focus**: Interactivity. Trends, Decomposition trees.\n  - **Goal**: Find \"The Why\" behind anomalies via exploration.\n- **Level 3: Report (Details)**\n  - **Focus**: Raw accuracy. Matrices and Detail tables.\n  - **Goal**: Root cause to specific batch IDs or operators.\n\n---\n\n## 2. Advanced Interaction Library\n\n### Drill-through\nAllows right-clicking a \"Production Line\" to jump to a detail page pre-filtered to that specific line.\n\n### Report Page Tooltips\nHover over a bar to see a **floating miniature report**, rather than plain black text.\n\n### Bookmarks & Selection\n- **Case**: Toggle between \"Yield View\" and \"Quality View\" using a button without leaving the page.",
+    "quiz": [
+      {
+        "id": "q6_1",
+        "questionZh": "在 DAR 设计法中，专注于通过高度交互来探索“异常原因”的一层被称为？",
+        "questionEn": "In the DAR approach, which level focuses on exploring \"The Why\" via heavy interactivity?",
+        "optionsZh": [
+          "Dashboard 概览层",
+          "Analysis 分析层",
+          "Report 报告层",
+          "Data 数据层"
+        ],
+        "optionsEn": [
+          "Dashboard",
+          "Analysis",
+          "Report",
+          "Data"
+        ],
+        "correctIndex": 1,
+        "explanationZh": "分析层 (Analysis) 是通过切片器和钻取等操作来探索趋势背后的原因。",
+        "explanationEn": "The Analysis level is where users use slicers and drill-throughs to explore the causes behind trends."
+      },
+      {
+        "id": "q6_2",
+        "questionZh": "Dashboard 概览层最重要的评价标准是什么？",
+        "questionEn": "What is the most important evaluation criteria for a Dashboard overview?",
+        "optionsZh": [
+          "颜色是否足够鲜艳",
+          "报表是否有一万行数据",
+          "是否能在一秒钟内反馈“我们赢了吗”",
+          "是否使用了 3D 图表"
+        ],
+        "optionsEn": [
+          "Bright colors",
+          "10,000 rows shown",
+          "Does it feedback 'are we winning' in 1s?",
+          "Use of 3D charts"
+        ],
+        "correctIndex": 2,
+        "explanationZh": "概览层应高密度呈现核心 KPI，让用户瞬间掌握整体状态。",
+        "explanationEn": "The Dashboard layer should present core KPIs at high density for instant state awareness."
+      },
+      {
+        "id": "q6_3",
+        "questionZh": "通过右击图表元素跳转到该元素的明细页面，这种功能叫？",
+        "questionEn": "The feature to jump to a detail page pre-filtered by right-clicking a visual element is?",
+        "optionsZh": [
+          "页面导航 (Navigation)",
+          "页面钻取 (Drill-through)",
+          "书签 (Bookmark)",
+          "筛选器 (Filter)"
+        ],
+        "optionsEn": [
+          "Navigation",
+          "Drill-through",
+          "Bookmark",
+          "Filter"
+        ],
+        "correctIndex": 1,
+        "explanationZh": "页面钻取是跨页面下钻分析异常原因的神器。",
+        "explanationEn": "Drill-through is a powerful tool for cross-page deep dives into root causes."
+      },
+      {
+        "id": "q6_4",
+        "questionZh": "在工业配色规范下，红色通常表示？",
+        "questionEn": "In industrial color standards, what does red usually signify?",
+        "optionsZh": [
+          "正在运行",
+          "非常重要（但正常）",
+          "故障、报警或阈值不达标",
+          "背景辅助色"
+        ],
+        "optionsEn": [
+          "Running",
+          "Very Important (But normal)",
+          "Failure, Alarm, or Goal Not Reached",
+          "Support background"
+        ],
+        "correctIndex": 2,
+        "explanationZh": "红色应严格且唯一地用于异常和警示，以防视觉干扰。",
+        "explanationEn": "Red should be strictly and uniquely used for anomalies and alerts to prevent distraction."
+      },
+      {
+        "id": "q6_5",
+        "questionZh": "帕累托分析 (80/20) 最核心的可视化价值在于？",
+        "questionEn": "What is the core visualization value of Pareto Analysis (80/20)?",
+        "optionsZh": [
+          "显示所有数据的平均值",
+          "识别导致 80% 问题的 20% 关键少数因素",
+          "计算同比",
+          "建立数据预测模型"
+        ],
+        "optionsEn": [
+          "Show average of all data",
+          "Identify 'Vital Few' 20% factors causing 80% problems",
+          "Calculate YoY",
+          "Build predictive models"
+        ],
+        "correctIndex": 1,
+        "explanationZh": "帕累托分析帮助决策者将有限的资源聚焦在最关键的问题原因上。",
+        "explanationEn": "Pareto analysis helps decision-makers focus limited resources on the most critical causes."
+      }
+    ]
+  }
+]
